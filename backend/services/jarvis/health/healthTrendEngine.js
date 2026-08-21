@@ -202,6 +202,10 @@ class HealthTrendEngine {
       trendDirection
     };
   }
+
+  static async getComputedTrends(userId) {
+    return this.computeUserTrends(userId);
+  }
 }
 
 module.exports = HealthTrendEngine;

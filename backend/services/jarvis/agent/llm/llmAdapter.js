@@ -362,6 +362,62 @@ class LLMAdapter extends LLMProvider {
       };
     }
 
+    // Q. Calendar Queries: "What's on my calendar today?" / "Show my calendar events"
+    if (lower.includes('calendar') && (lower.includes('event') || lower.includes('today') || lower.includes('what') || lower.includes('show'))) {
+      return {
+        type: 'TOOL_CALL',
+        intent: 'CALENDAR_QUERY',
+        toolCalls: [
+          {
+            tool: 'get_calendar_events',
+            arguments: { date: today }
+          }
+        ]
+      };
+    }
+
+    // R. Appointment Queries: "Do I have any appointments?" / "Upcoming appointments"
+    if (lower.includes('appointment') || lower.includes('consultation')) {
+      return {
+        type: 'TOOL_CALL',
+        intent: 'APPOINTMENTS_QUERY',
+        toolCalls: [
+          {
+            tool: 'get_upcoming_appointments',
+            arguments: {}
+          }
+        ]
+      };
+    }
+
+    // S. Free Time / Availability Queries: "Find free time tomorrow" / "When am I free?"
+    if (lower.includes('free time') || lower.includes('find availability') || lower.includes('free slot')) {
+      return {
+        type: 'TOOL_CALL',
+        intent: 'CALENDAR_AVAILABILITY_QUERY',
+        toolCalls: [
+          {
+            tool: 'find_calendar_availability',
+            arguments: { date: lower.includes('tomorrow') ? tomorrow : today }
+          }
+        ]
+      };
+    }
+
+    // T. Pending Workflow Actions: "Show my pending actions" / "Action center"
+    if (lower.includes('pending action') || lower.includes('action center') || lower.includes('pending workflow')) {
+      return {
+        type: 'TOOL_CALL',
+        intent: 'WORKFLOW_ACTIONS_QUERY',
+        toolCalls: [
+          {
+            tool: 'get_pending_workflow_actions',
+            arguments: {}
+          }
+        ]
+      };
+    }
+
     // Q. Family Notification: "Tell my family I'm running late"
     if (lower.includes('tell my') || lower.includes('notify family')) {
       return {

@@ -31,7 +31,20 @@ const DEFAULT_ACTION_PERMISSIONS = {
   get_health_trends: 'AUTO_APPROVE',
   get_health_alerts: 'AUTO_APPROVE',
   generate_doctor_briefing: 'AUTO_APPROVE',
-  export_health_data: 'ASK_ALWAYS'
+  export_health_data: 'ASK_ALWAYS',
+  get_calendar_events: 'AUTO_APPROVE',
+  find_calendar_availability: 'AUTO_APPROVE',
+  get_upcoming_appointments: 'AUTO_APPROVE',
+  get_doctor_followups: 'AUTO_APPROVE',
+  get_pending_workflow_actions: 'AUTO_APPROVE',
+  create_calendar_event: 'ASK_ALWAYS',
+  update_calendar_event: 'ASK_ALWAYS',
+  delete_calendar_event: 'ASK_ALWAYS',
+  create_appointment_reminder: 'ASK_ALWAYS',
+  update_appointment_reminder: 'ASK_ALWAYS',
+  create_followup_routine: 'ASK_ALWAYS',
+  record_appointment_completion: 'ASK_ALWAYS',
+  export_appointment_briefing: 'ASK_ALWAYS'
 };
 
 class AiPermissionRepository {

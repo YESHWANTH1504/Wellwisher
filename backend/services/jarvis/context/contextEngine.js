@@ -10,6 +10,7 @@ const MedicationRetriever = require('./retrievers/medicationRetriever');
 const FamilyRetriever = require('./retrievers/familyRetriever');
 const DocumentRetriever = require('./retrievers/documentRetriever');
 const HealthTrendRetriever = require('./retrievers/healthTrendRetriever');
+const WorkflowRetriever = require('./retrievers/workflowRetriever');
 
 const { AiPreferenceRepository } = require('../../../repositories/ai/aiPreferenceRepository');
 const pool = require('../../../config/db');
@@ -217,6 +218,40 @@ class ContextEngine {
           sources.healthTrends = { status: SOURCE_STATUS.UNAVAILABLE, error: err.message, data: null };
         } finally {
           sourceTimings.healthTrends = Date.now() - sStart;
+        }
+      })()
+    );
+
+    // --- Workflows, Appointments & Calendar Source (Phase 10) ---
+    tasks.push(
+      (async () => {
+        const sStart = Date.now();
+        if (!categories.includes('WORKFLOW') && !categories.includes('CALENDAR') && !options.forceAllSources) {
+          sources.workflow = { status: SOURCE_STATUS.NOT_RELEVANT, data: null };
+          sourceTimings.workflow = 0;
+          return;
+        }
+        try {
+          const [appointments, calendarEvents, pendingActions, followups] = await Promise.all([
+            WorkflowRetriever.retrieveAppointmentsContext(userId),
+            WorkflowRetriever.retrieveCalendarContext(userId, { date: temporal.currentDate }),
+            WorkflowRetriever.retrieveWorkflowActionsContext(userId),
+            WorkflowRetriever.retrieveDoctorFollowupsContext(userId)
+          ]);
+          const hasData = appointments.length > 0 || calendarEvents.length > 0 || pendingActions.length > 0 || followups.length > 0;
+          sources.workflow = {
+            status: hasData ? SOURCE_STATUS.AVAILABLE : SOURCE_STATUS.EMPTY,
+            data: {
+              appointments,
+              calendarEvents,
+              pendingActions,
+              followups
+            }
+          };
+        } catch (err) {
+          sources.workflow = { status: SOURCE_STATUS.UNAVAILABLE, error: err.message, data: null };
+        } finally {
+          sourceTimings.workflow = Date.now() - sStart;
         }
       })()
     );

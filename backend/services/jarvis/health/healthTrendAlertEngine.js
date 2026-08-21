@@ -142,6 +142,10 @@ class HealthTrendAlertEngine {
       });
     }
   }
+
+  static async evaluateHealthTrendAlerts(userId, userPreferences, temporal) {
+    return this.evaluateHealthAlerts(userId, userPreferences, temporal);
+  }
 }
 
 module.exports = HealthTrendAlertEngine;

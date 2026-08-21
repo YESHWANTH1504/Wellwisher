@@ -127,6 +127,10 @@ class DoctorVisitPreparationEngine {
 
     return savedRecord;
   }
+
+  static async generateDoctorBriefing(userId) {
+    return this.generateBriefing(userId);
+  }
 }
 
 module.exports = DoctorVisitPreparationEngine;

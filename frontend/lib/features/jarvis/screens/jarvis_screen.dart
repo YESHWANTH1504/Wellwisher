@@ -137,6 +137,11 @@ class _JarvisScreenState extends State<JarvisScreen> {
             onPressed: () => _controller.toggleVoice(!_controller.isVoiceEnabled),
           ),
           IconButton(
+            icon: const Icon(Icons.bolt, color: Color(0xFFFFD54F)),
+            tooltip: 'Action Center & Workflows',
+            onPressed: () => Navigator.pushNamed(context, '/jarvis/action-center'),
+          ),
+          IconButton(
             icon: const Icon(Icons.analytics_outlined, color: Color(0xFF00E5FF)),
             tooltip: 'Autonomous Health Center',
             onPressed: () => Navigator.pushNamed(context, '/jarvis/health'),

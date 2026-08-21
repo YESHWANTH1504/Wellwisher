@@ -30,11 +30,13 @@ import '../../features/jarvis/screens/document_list_screen.dart';
 import '../../features/jarvis/screens/document_upload_screen.dart';
 import '../../features/jarvis/screens/document_comparison_screen.dart';
 import '../../features/jarvis/screens/health_intelligence_screen.dart';
+import '../../features/jarvis/screens/jarvis_action_center_screen.dart';
 
 class AppRoutes {
   static const String portal = '/';
   static const String jarvis = '/jarvis';
   static const String jarvisHealth = '/jarvis/health';
+  static const String jarvisActionCenter = '/jarvis/action-center';
   static const String jarvisDocuments = '/jarvis/documents';
   static const String jarvisDocumentUpload = '/jarvis/documents/upload';
   static const String jarvisDocumentCompare = '/jarvis/documents/compare';
@@ -76,6 +78,8 @@ class AppRoutes {
         );
       case jarvisHealth:
         return MaterialPageRoute(builder: (_) => const HealthIntelligenceScreen());
+      case jarvisActionCenter:
+        return MaterialPageRoute(builder: (_) => const JarvisActionCenterScreen());
       case jarvisDocuments:
         return MaterialPageRoute(builder: (_) => const DocumentListScreen());
       case jarvisDocumentUpload:

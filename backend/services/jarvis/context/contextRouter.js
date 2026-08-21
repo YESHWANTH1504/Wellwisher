@@ -63,12 +63,21 @@ class ContextRouter {
       categories.add('DOCUMENT');
     }
 
-    // 9. General inquiries (always include schedule & memory by default for broad prompts)
+    // 9. Calendar & Appointments & Life Workflows (Phase 10)
+    if (
+      /\b(calendar|event|events|google calendar|outlook|appointment|appointments|doctor appointment|consultation|follow-up|followup|clinic|action center|actions|pending actions|free time|free slot|availability)\b/i.test(text)
+    ) {
+      categories.add('WORKFLOW');
+      categories.add('CALENDAR');
+    }
+
+    // 10. General inquiries (always include schedule, memory, workflow by default for broad prompts)
     if (categories.size === 0 || /\b(overview|briefing|status|how am i doing|dashboard|update|start my day)\b/i.test(text)) {
       categories.add('SCHEDULE');
       categories.add('MEMORY');
       categories.add('WELLNESS');
       categories.add('HEALTH_TRENDS');
+      categories.add('WORKFLOW');
     }
 
     return Array.from(categories);

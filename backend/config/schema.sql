@@ -540,5 +540,46 @@ CREATE TABLE IF NOT EXISTS ai_doctor_briefings (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 29. AI Appointments Table (Phase 10)
+CREATE TABLE IF NOT EXISTS ai_appointments (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    provider VARCHAR(100) NULL,
+    appointment_type VARCHAR(100) NULL,
+    scheduled_at VARCHAR(100) NOT NULL,
+    location VARCHAR(255) NULL,
+    status ENUM('PLANNED', 'CONFIRMED', 'UPCOMING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'FOLLOW_UP_REQUIRED') NOT NULL DEFAULT 'PLANNED',
+    doctor_name VARCHAR(100) NULL,
+    notes TEXT NULL,
+    briefing_id VARCHAR(64) NULL,
+    follow_up_date VARCHAR(50) NULL,
+    doctor_instructions TEXT NULL,
+    tests_requested JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_appointments (user_id, status, scheduled_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 30. AI Workflow Actions Table (Phase 10)
+CREATE TABLE IF NOT EXISTS ai_workflow_actions (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    action_type VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    entity_id VARCHAR(64) NULL,
+    status ENUM('PENDING', 'CONFIRMED', 'DISMISSED', 'COMPLETED', 'EXPIRED') NOT NULL DEFAULT 'PENDING',
+    requires_confirmation BOOLEAN NOT NULL DEFAULT TRUE,
+    confirmation_id VARCHAR(64) NULL,
+    payload JSON NOT NULL,
+    result JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP NULL,
+    INDEX idx_user_workflow_actions (user_id, status, action_type),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
 
 

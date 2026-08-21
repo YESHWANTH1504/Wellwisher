@@ -63,6 +63,8 @@ class InMemoryDatabaseEngine {
       ai_health_trends: [],
       ai_health_alerts: [],
       ai_doctor_briefings: [],
+      ai_appointments: [],
+      ai_workflow_actions: [],
       medications: []
     };
   }
@@ -1177,6 +1179,164 @@ class InMemoryDatabaseEngine {
         const prev = this.store.ai_doctor_briefings.length;
         this.store.ai_doctor_briefings = this.store.ai_doctor_briefings.filter(b => b.user_id !== userId);
         return [{ affectedRows: prev - this.store.ai_doctor_briefings.length }];
+      }
+    }
+
+    // Phase 10: AI Appointments
+    if (lower.includes('ai_appointments')) {
+      if (lower.startsWith('select * from ai_appointments where id = ? and user_id = ?')) {
+        const [id, userId] = params;
+        const a = this.store.ai_appointments.find(item => item.id === id && item.user_id === userId);
+        return [a ? [a] : []];
+      }
+      if (lower.startsWith('select * from ai_appointments where user_id = ? and status = ?')) {
+        const [userId, status] = params;
+        const list = this.store.ai_appointments.filter(a => a.user_id === userId && a.status === status);
+        return [list];
+      }
+      if (lower.startsWith('select * from ai_appointments where user_id = ? and scheduled_at >= ?')) {
+        const [userId, minDate] = params;
+        const list = this.store.ai_appointments.filter(a => a.user_id === userId && a.scheduled_at >= minDate);
+        return [list];
+      }
+      if (lower.startsWith('select * from ai_appointments where user_id = ?')) {
+        const [userId] = params;
+        const list = this.store.ai_appointments.filter(a => a.user_id === userId).sort((a, b) => (a.scheduled_at || '').localeCompare(b.scheduled_at || ''));
+        return [list];
+      }
+      if (lower.startsWith('insert into ai_appointments')) {
+        const [id, userId, title, provider, appointmentType, scheduledAt, location, status, doctorName, notes, briefingId, followUpDate, doctorInstructions, testsRequested] = params;
+        const record = {
+          id: id || `apt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          user_id: userId,
+          title,
+          provider: provider || 'WellWisher Health',
+          appointment_type: appointmentType || 'General Consultation',
+          scheduled_at: scheduledAt,
+          location: location || '',
+          status: status || 'PLANNED',
+          doctor_name: doctorName || '',
+          notes: notes || '',
+          briefing_id: briefingId || null,
+          follow_up_date: followUpDate || null,
+          doctor_instructions: doctorInstructions || null,
+          tests_requested: typeof testsRequested === 'string' ? JSON.parse(testsRequested) : testsRequested || [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        this.store.ai_appointments.push(record);
+        return [{ insertId: record.id, affectedRows: 1 }];
+      }
+      if (lower.startsWith('update ai_appointments set')) {
+        if (lower.includes('where id = ? and user_id = ?')) {
+          const id = params[params.length - 2];
+          const userId = params[params.length - 1];
+          const a = this.store.ai_appointments.find(item => item.id === id && item.user_id === userId);
+          if (a) {
+            if (lower.includes('status = ?') && lower.includes('doctor_instructions = ?')) {
+              const [status, instructions, followUp, tests] = params;
+              a.status = status;
+              a.doctor_instructions = instructions;
+              a.follow_up_date = followUp;
+              a.tests_requested = typeof tests === 'string' ? JSON.parse(tests) : tests || [];
+            } else if (lower.includes('status = ?') && lower.includes('briefing_id = ?')) {
+              const [status, briefingId] = params;
+              a.status = status;
+              a.briefing_id = briefingId;
+            } else if (lower.includes('status = ?')) {
+              a.status = params[0];
+            } else if (lower.includes('title = ?')) {
+              const [title, provider, appType, scheduledAt, location, status, doctorName, notes] = params;
+              if (title) a.title = title;
+              if (provider) a.provider = provider;
+              if (appType) a.appointment_type = appType;
+              if (scheduledAt) a.scheduled_at = scheduledAt;
+              if (location) a.location = location;
+              if (status) a.status = status;
+              if (doctorName) a.doctor_name = doctorName;
+              if (notes) a.notes = notes;
+            }
+            a.updated_at = new Date().toISOString();
+            return [{ affectedRows: 1 }];
+          }
+          return [{ affectedRows: 0 }];
+        }
+      }
+      if (lower.startsWith('delete from ai_appointments where id = ? and user_id = ?')) {
+        const [id, userId] = params;
+        const prev = this.store.ai_appointments.length;
+        this.store.ai_appointments = this.store.ai_appointments.filter(a => !(a.id === id && a.user_id === userId));
+        return [{ affectedRows: prev - this.store.ai_appointments.length }];
+      }
+      if (lower.startsWith('delete from ai_appointments where user_id = ?')) {
+        const [userId] = params;
+        const prev = this.store.ai_appointments.length;
+        this.store.ai_appointments = this.store.ai_appointments.filter(a => a.user_id !== userId);
+        return [{ affectedRows: prev - this.store.ai_appointments.length }];
+      }
+    }
+
+    // Phase 10: AI Workflow Actions
+    if (lower.includes('ai_workflow_actions')) {
+      if (lower.startsWith('select * from ai_workflow_actions where id = ? and user_id = ?')) {
+        const [id, userId] = params;
+        const w = this.store.ai_workflow_actions.find(item => item.id === id && item.user_id === userId);
+        return [w ? [w] : []];
+      }
+      if (lower.startsWith('select * from ai_workflow_actions where user_id = ? and status = ?')) {
+        const [userId, status] = params;
+        const list = this.store.ai_workflow_actions.filter(w => w.user_id === userId && w.status === status);
+        return [list];
+      }
+      if (lower.startsWith('select * from ai_workflow_actions where user_id = ?')) {
+        const [userId] = params;
+        const list = this.store.ai_workflow_actions.filter(w => w.user_id === userId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        return [list];
+      }
+      if (lower.startsWith('insert into ai_workflow_actions')) {
+        const [id, userId, actionType, entityType, entityId, status, requiresConfirmation, confirmationId, payload, result] = params;
+        const record = {
+          id: id || `wf_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          user_id: userId,
+          action_type: actionType,
+          entity_type: entityType,
+          entity_id: entityId || null,
+          status: status || 'PENDING',
+          requires_confirmation: requiresConfirmation !== undefined ? (requiresConfirmation ? 1 : 0) : 1,
+          confirmation_id: confirmationId || null,
+          payload: typeof payload === 'string' ? JSON.parse(payload) : payload || {},
+          result: typeof result === 'string' ? JSON.parse(result) : result || null,
+          created_at: new Date().toISOString(),
+          completed_at: null
+        };
+        this.store.ai_workflow_actions.unshift(record);
+        return [{ insertId: record.id, affectedRows: 1 }];
+      }
+      if (lower.startsWith('update ai_workflow_actions set status = ?, result = ?, completed_at = now() where id = ? and user_id = ?')) {
+        const [status, result, id, userId] = params;
+        const w = this.store.ai_workflow_actions.find(item => item.id === id && item.user_id === userId);
+        if (w) {
+          w.status = status;
+          w.result = typeof result === 'string' ? JSON.parse(result) : result || null;
+          w.completed_at = new Date().toISOString();
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+      if (lower.startsWith('update ai_workflow_actions set status = ? where id = ? and user_id = ?')) {
+        const [status, id, userId] = params;
+        const w = this.store.ai_workflow_actions.find(item => item.id === id && item.user_id === userId);
+        if (w) {
+          w.status = status;
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+      if (lower.startsWith('delete from ai_workflow_actions where user_id = ?')) {
+        const [userId] = params;
+        const prev = this.store.ai_workflow_actions.length;
+        this.store.ai_workflow_actions = this.store.ai_workflow_actions.filter(w => w.user_id !== userId);
+        return [{ affectedRows: prev - this.store.ai_workflow_actions.length }];
       }
     }
 
