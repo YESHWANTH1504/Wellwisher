@@ -3,13 +3,13 @@ require('dotenv').config();
 
 // Real MySQL Connection Pool (Production & Standard Runtime)
 const realPool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || '127.0.0.1',
   port: parseInt(process.env.DB_PORT, 10) || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'wellwisher',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 30,
   queueLimit: 0
 });
 
@@ -36,6 +36,7 @@ class InMemoryDatabaseEngine {
   constructor() {
     this.store = {
       users: [],
+      routine_templates: [],
       routines: [],
       hydration_logs: [],
       vitals_logs: [],
@@ -65,7 +66,13 @@ class InMemoryDatabaseEngine {
       ai_doctor_briefings: [],
       ai_appointments: [],
       ai_workflow_actions: [],
-      medications: []
+      medications: [],
+      jarvis_devices: [],
+      jarvis_tasks: [],
+      jarvis_execution_runs: [],
+      jarvis_notifications: [],
+      ai_active_tasks: [],
+      ai_idempotency_keys: []
     };
   }
 
@@ -78,7 +85,80 @@ class InMemoryDatabaseEngine {
       return [[{ solution: 2 }]];
     }
 
-    // 2. Routines table
+    // 2A. Routine Templates Table
+    if (lower.includes('from routine_templates') || lower.includes('into routine_templates') || lower.includes('update routine_templates')) {
+      if (lower.startsWith('select')) {
+        let rows = this.store.routine_templates.filter(r => !r.deleted_at);
+        if (lower.includes('where id = ? and user_id = ?')) {
+          const [id, userId] = params;
+          rows = rows.filter(r => r.id === id && r.user_id === userId);
+        } else if (lower.includes('where user_id = ? and enabled = 1')) {
+          const [userId] = params;
+          rows = rows.filter(r => r.user_id === userId && (r.enabled === 1 || r.enabled === true));
+        } else if (lower.includes('where user_id = ?')) {
+          const [userId] = params;
+          rows = rows.filter(r => r.user_id === userId);
+        } else if (params.length === 1 && lower.includes('where id = ?')) {
+          rows = rows.filter(r => r.id === params[0]);
+        }
+        return [rows];
+      }
+
+      if (lower.startsWith('insert into routine_templates') || lower.startsWith('insert ignore into routine_templates')) {
+        // Support inserting object or array
+        const [id, userId, title, weekdayMask, startTime, endTime, category, eventType, enabled, reminderEnabled, reminderOffset, recurrenceRule, timezone] = params;
+        const existingIdx = this.store.routine_templates.findIndex(t => t.id === id);
+        if (existingIdx === -1) {
+          this.store.routine_templates.push({
+            id,
+            user_id: userId,
+            title,
+            weekday_mask: weekdayMask,
+            start_time: startTime,
+            end_time: endTime || null,
+            category: category || 'routine',
+            event_type: eventType || 'routine',
+            enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1,
+            reminder_enabled: reminderEnabled !== undefined ? (reminderEnabled ? 1 : 0) : 1,
+            reminder_offset: reminderOffset || 0,
+            recurrence_rule: recurrenceRule || 'WEEKLY',
+            timezone: timezone || 'UTC',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            deleted_at: null
+          });
+        }
+        return [{ insertId: 1, affectedRows: 1 }];
+      }
+
+      if (lower.startsWith('update routine_templates set deleted_at')) {
+        const [id, userId] = params;
+        const idx = this.store.routine_templates.findIndex(r => r.id === id && r.user_id === userId && !r.deleted_at);
+        if (idx !== -1) {
+          this.store.routine_templates[idx].deleted_at = new Date().toISOString();
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+
+      if (lower.startsWith('update routine_templates set')) {
+        const idx = this.store.routine_templates.findIndex(r => r.id === params[params.length - 2] && r.user_id === params[params.length - 1] && !r.deleted_at);
+        if (idx !== -1) {
+          const item = this.store.routine_templates[idx];
+          if (lower.includes('start_time = ?')) {
+            item.start_time = params[0];
+          }
+          if (lower.includes('title = ?')) {
+            item.title = params[0];
+          }
+          item.updated_at = new Date().toISOString();
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+    }
+
+    // 2B. Routines table
     if (lower.includes('from routines') || lower.includes('into routines') || lower.includes('update routines')) {
       if (lower.startsWith('select')) {
         let rows = this.store.routines.filter(r => !r.deleted_at);
@@ -96,9 +176,15 @@ class InMemoryDatabaseEngine {
         if (lower.includes('where id = ? and user_id = ?')) {
           const [id, userId] = params;
           rows = rows.filter(r => r.id === id && r.user_id === userId);
+        } else if (lower.includes('where user_id = ? and template_id = ? and date = ?')) {
+          const [userId, templateId, date] = params;
+          rows = rows.filter(r => r.user_id === userId && r.template_id === templateId && r.date === date);
         } else if (lower.includes('where user_id = ? and date = ?')) {
           const [userId, date] = params;
           rows = rows.filter(r => r.user_id === userId && r.date === date);
+        } else if (lower.includes('where user_id = ? and date >= ? and date <= ?')) {
+          const [userId, startDate, endDate] = params;
+          rows = rows.filter(r => r.user_id === userId && r.date >= startDate && r.date <= endDate);
         } else if (lower.includes('where user_id = ?')) {
           const [userId] = params;
           rows = rows.filter(r => r.user_id === userId);
@@ -108,22 +194,71 @@ class InMemoryDatabaseEngine {
         return [rows];
       }
 
-      if (lower.startsWith('insert into routines')) {
-        const [id, userId, title, description, time, category, status, date, reminderEnabled] = params;
-        this.store.routines.push({
-          id: id || `rot_${Date.now()}`,
-          user_id: userId,
-          title,
-          description: description || '',
-          time,
-          category: category || 'other',
-          status: status || 'upcoming',
-          date,
-          reminder_enabled: reminderEnabled ? 1 : 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          deleted_at: null
-        });
+      if (lower.startsWith('insert into routines') || lower.startsWith('insert ignore into routines')) {
+        // Parse flexible parameters
+        let newRoutine = {};
+        if (params.length >= 15) {
+          const [id, userId, title, description, time, endTime, category, eventType, status, date, timezone, isAllDay, recurrenceGroupId, templateId, source, reminderEnabled, reminderMinutesBefore, priority] = params;
+          newRoutine = {
+            id: id || `rot_${Date.now()}`,
+            user_id: userId,
+            title,
+            description: description || '',
+            time,
+            end_time: endTime || null,
+            category: category || 'routine',
+            event_type: eventType || 'routine',
+            status: status || 'scheduled',
+            date,
+            timezone: timezone || 'UTC',
+            is_all_day: isAllDay ? 1 : 0,
+            recurrence_group_id: recurrenceGroupId || null,
+            template_id: templateId || null,
+            source: source || 'system',
+            reminder_enabled: reminderEnabled ? 1 : 0,
+            reminder_minutes_before: reminderMinutesBefore || 0,
+            priority: priority || 'normal',
+            completed_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            deleted_at: null
+          };
+        } else {
+          const [id, userId, title, description, time, category, status, date, reminderEnabled] = params;
+          newRoutine = {
+            id: id || `rot_${Date.now()}`,
+            user_id: userId,
+            title,
+            description: description || '',
+            time,
+            end_time: null,
+            category: category || 'other',
+            event_type: 'routine',
+            status: status || 'scheduled',
+            date,
+            timezone: 'UTC',
+            is_all_day: 0,
+            recurrence_group_id: null,
+            template_id: null,
+            source: 'manual',
+            reminder_enabled: reminderEnabled ? 1 : 0,
+            reminder_minutes_before: 0,
+            priority: 'normal',
+            completed_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            deleted_at: null
+          };
+        }
+
+        // Deduplicate if template_id and date match
+        if (newRoutine.template_id) {
+          const existing = this.store.routines.find(r => r.user_id === newRoutine.user_id && r.template_id === newRoutine.template_id && r.date === newRoutine.date && !r.deleted_at);
+          if (existing) {
+            return [{ insertId: 0, affectedRows: 0 }];
+          }
+        }
+        this.store.routines.push(newRoutine);
         return [{ insertId: 1, affectedRows: 1 }];
       }
 
@@ -132,20 +267,49 @@ class InMemoryDatabaseEngine {
         const idx = this.store.routines.findIndex(r => r.id === id && r.user_id === userId && !r.deleted_at);
         if (idx !== -1) {
           this.store.routines[idx].deleted_at = new Date().toISOString();
+          this.store.routines[idx].status = 'cancelled';
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+
+      if (lower.startsWith('update routines set status = ?, completed_at = ?')) {
+        const [status, completedAt, id, userId] = params;
+        const idx = this.store.routines.findIndex(r => r.id === id && r.user_id === userId && !r.deleted_at);
+        if (idx !== -1) {
+          this.store.routines[idx].status = status;
+          this.store.routines[idx].completed_at = completedAt;
+          this.store.routines[idx].updated_at = new Date().toISOString();
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+
+      if (lower.startsWith('update routines set status = ?')) {
+        const [status, id, userId] = params;
+        const idx = this.store.routines.findIndex(r => r.id === id && r.user_id === userId && !r.deleted_at);
+        if (idx !== -1) {
+          this.store.routines[idx].status = status;
+          this.store.routines[idx].updated_at = new Date().toISOString();
           return [{ affectedRows: 1 }];
         }
         return [{ affectedRows: 0 }];
       }
 
       if (lower.startsWith('update routines set')) {
-        const [title, description, time, category, status, date, reminderEnabled, id, userId] = params;
+        const id = params[params.length - 2];
+        const userId = params[params.length - 1];
         const idx = this.store.routines.findIndex(r => r.id === id && r.user_id === userId && !r.deleted_at);
         if (idx !== -1) {
-          this.store.routines[idx] = {
-            ...this.store.routines[idx],
-            title, description, time, category, status, date, reminder_enabled: reminderEnabled,
-            updated_at: new Date().toISOString()
-          };
+          const item = this.store.routines[idx];
+          if (lower.includes('time = ?')) {
+            // Find time in params
+            item.time = params.find(p => typeof p === 'string' && (/^\d{1,2}:\d{2}/.test(p) || /^\d{1,2}(:\d{2})?\s*(AM|PM)/i.test(p))) || item.time;
+          }
+          if (lower.includes('title = ?') && typeof params[0] === 'string') {
+            item.title = params[0];
+          }
+          item.updated_at = new Date().toISOString();
           return [{ affectedRows: 1 }];
         }
         return [{ affectedRows: 0 }];
@@ -563,10 +727,15 @@ class InMemoryDatabaseEngine {
       }
 
       if (lower.startsWith('insert into ai_proactive_events')) {
-        const [
-          id, userId, eventType, priority, title, message, source,
-          relatedEntityType, relatedEntityId, scheduledFor, status, actionPayload, metadata, expiresAt
-        ] = params;
+        let id, userId, eventType, priority, title, message, source,
+            relatedEntityType, relatedEntityId, scheduledFor, status, dedupKey, actionPayload, metadata, expiresAt;
+        if (params.length >= 15) {
+          [id, userId, eventType, priority, title, message, source, relatedEntityType, relatedEntityId, scheduledFor, status, dedupKey, actionPayload, metadata, expiresAt] = params;
+        } else {
+          [id, userId, eventType, priority, title, message, source, relatedEntityType, relatedEntityId, scheduledFor, status, actionPayload, metadata, expiresAt] = params;
+        }
+        const safeSched = scheduledFor && !isNaN(new Date(scheduledFor).getTime()) ? new Date(scheduledFor).toISOString() : new Date().toISOString();
+        const safeExp = expiresAt && !isNaN(new Date(expiresAt).getTime()) ? new Date(expiresAt).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         const newEvent = {
           id,
           user_id: userId,
@@ -577,12 +746,13 @@ class InMemoryDatabaseEngine {
           source,
           related_entity_type: relatedEntityType,
           related_entity_id: relatedEntityId,
-          scheduled_for: scheduledFor ? new Date(scheduledFor).toISOString() : new Date().toISOString(),
+          scheduled_for: safeSched,
           delivered_at: null,
-          status: status || 'PENDING',
+          status: status || 'CREATED',
+          deduplication_key: dedupKey || null,
           action_payload: actionPayload,
           metadata,
-          expires_at: expiresAt ? new Date(expiresAt).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          expires_at: safeExp,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -1340,6 +1510,301 @@ class InMemoryDatabaseEngine {
       }
     }
 
+    // 22. jarvis_devices
+    if (lower.includes('from jarvis_devices') || lower.includes('into jarvis_devices') || lower.includes('update jarvis_devices')) {
+      if (lower.startsWith('select * from jarvis_devices where user_id = ? and device_id = ?')) {
+        const [userId, deviceId] = params;
+        const dev = this.store.jarvis_devices.filter(d => d.user_id === userId && d.device_id === deviceId);
+        return [dev];
+      }
+      if (lower.startsWith('select * from jarvis_devices where user_id = ?')) {
+        const [userId] = params;
+        const devs = this.store.jarvis_devices.filter(d => d.user_id === userId);
+        return [devs];
+      }
+      if (lower.startsWith('insert into jarvis_devices')) {
+        const [id, userId, deviceId, deviceName, platform, wakeWordEnabled, backgroundActive, batteryOptimizationIgnored, pushToken] = params;
+        const dev = {
+          id: id || `jdev_${Date.now()}`,
+          user_id: userId,
+          device_id: deviceId,
+          device_name: deviceName,
+          platform: platform,
+          wake_word_enabled: wakeWordEnabled,
+          background_active: backgroundActive,
+          battery_optimization_ignored: batteryOptimizationIgnored,
+          push_token: pushToken,
+          last_active_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+        this.store.jarvis_devices.push(dev);
+        return [{ insertId: dev.id, affectedRows: 1 }];
+      }
+      if (lower.startsWith('update jarvis_devices')) {
+        const [deviceName, platform, wakeWordEnabled, backgroundActive, batteryOptimizationIgnored, pushToken, userId, deviceId] = params;
+        const dev = this.store.jarvis_devices.find(d => d.user_id === userId && d.device_id === deviceId);
+        if (dev) {
+          dev.device_name = deviceName;
+          dev.platform = platform;
+          dev.wake_word_enabled = wakeWordEnabled;
+          dev.background_active = backgroundActive;
+          dev.battery_optimization_ignored = batteryOptimizationIgnored;
+          dev.push_token = pushToken;
+          dev.last_active_at = new Date().toISOString();
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+    }
+
+    // 23. jarvis_tasks
+    if (lower.includes('from jarvis_tasks') || lower.includes('into jarvis_tasks') || lower.includes('update jarvis_tasks')) {
+      if (lower.startsWith('select * from jarvis_tasks where user_id = ? and id = ?')) {
+        const [userId, taskId] = params;
+        const task = this.store.jarvis_tasks.filter(t => t.user_id === userId && t.id === taskId);
+        return [task];
+      }
+      if (lower.startsWith('select * from jarvis_tasks where user_id = ? and status = ?')) {
+        const [userId, status] = params;
+        const tasks = this.store.jarvis_tasks.filter(t => t.user_id === userId && t.status === status);
+        return [tasks];
+      }
+      if (lower.startsWith('select * from jarvis_tasks where user_id = ?')) {
+        const [userId] = params;
+        const tasks = this.store.jarvis_tasks.filter(t => t.user_id === userId);
+        return [tasks];
+      }
+      if (lower.includes("where status = 'pending'")) {
+        const [dueBefore] = params;
+        const tasks = this.store.jarvis_tasks.filter(t => t.status === 'PENDING' && (!t.schedule_time || t.schedule_time <= dueBefore));
+        return [tasks];
+      }
+      if (lower.startsWith('insert into jarvis_tasks')) {
+        const [id, userId, title, taskType, scheduleTime, cronExpression, status, payload, nextRunAt] = params;
+        const task = {
+          id: id || `jtask_${Date.now()}`,
+          user_id: userId,
+          title,
+          task_type: taskType,
+          schedule_time: scheduleTime,
+          cron_expression: cronExpression,
+          status: status || 'PENDING',
+          payload: typeof payload === 'string' ? JSON.parse(payload) : payload || {},
+          result: null,
+          last_run_at: null,
+          next_run_at: nextRunAt || scheduleTime,
+          created_at: new Date().toISOString()
+        };
+        this.store.jarvis_tasks.unshift(task);
+        return [{ insertId: task.id, affectedRows: 1 }];
+      }
+      if (lower.startsWith('update jarvis_tasks set status = ?, result = ?, last_run_at = now() where user_id = ? and id = ?')) {
+        const [status, result, userId, taskId] = params;
+        const t = this.store.jarvis_tasks.find(item => item.user_id === userId && item.id === taskId);
+        if (t) {
+          t.status = status;
+          t.result = typeof result === 'string' ? JSON.parse(result) : result;
+          t.last_run_at = new Date().toISOString();
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+    }
+
+    // 24. jarvis_execution_runs
+    if (lower.includes('from jarvis_execution_runs') || lower.includes('into jarvis_execution_runs')) {
+      if (lower.startsWith('select * from jarvis_execution_runs where user_id = ?')) {
+        const [userId] = params;
+        const runs = this.store.jarvis_execution_runs.filter(r => r.user_id === userId);
+        return [runs];
+      }
+      if (lower.startsWith('insert into jarvis_execution_runs')) {
+        const [id, userId, triggerSource, inputText, intent, status, executionSteps, responseText, durationMs] = params;
+        const run = {
+          id: id || `jrun_${Date.now()}`,
+          user_id: userId,
+          trigger_source: triggerSource,
+          input_text: inputText,
+          intent,
+          status,
+          execution_steps: typeof executionSteps === 'string' ? JSON.parse(executionSteps) : executionSteps,
+          response_text: responseText,
+          duration_ms: durationMs,
+          created_at: new Date().toISOString()
+        };
+        this.store.jarvis_execution_runs.unshift(run);
+        return [{ insertId: run.id, affectedRows: 1 }];
+      }
+    }
+
+    // 25. jarvis_notifications
+    if (lower.includes('from jarvis_notifications') || lower.includes('into jarvis_notifications')) {
+      if (lower.startsWith('select * from jarvis_notifications where user_id = ?')) {
+        const [userId] = params;
+        const notifs = this.store.jarvis_notifications.filter(n => n.user_id === userId);
+        return [notifs];
+      }
+      if (lower.startsWith('insert into jarvis_notifications')) {
+        const [id, userId, title, body, notificationType, actionButtons] = params;
+        const notif = {
+          id: id || `jnotif_${Date.now()}`,
+          user_id: userId,
+          title,
+          body,
+          notification_type: notificationType,
+          action_buttons: typeof actionButtons === 'string' ? JSON.parse(actionButtons) : actionButtons,
+          is_read: 0,
+          is_delivered: 1,
+          delivered_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+        this.store.jarvis_notifications.unshift(notif);
+        return [{ insertId: notif.id, affectedRows: 1 }];
+      }
+    }
+
+    // 26. ai_active_tasks
+    if (lower.includes('ai_active_tasks')) {
+      if (lower.startsWith('select')) {
+        console.log('[DEBUG db.js store count]:', this.store.ai_active_tasks.length, 'params:', params);
+        let tasks = [...this.store.ai_active_tasks];
+        const now = Date.now();
+        // Filter out expired tasks
+        tasks = tasks.filter(t => !t.expires_at || new Date(t.expires_at).getTime() > now);
+
+        if (lower.includes('session_id = ? and user_id = ?')) {
+          const [sessionId, userId] = params;
+          tasks = tasks.filter(t => t.session_id === sessionId && t.user_id === userId);
+          tasks.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          return [tasks];
+        } else if (lower.includes('session_id = ? or user_id = ?')) {
+          const [sessionId, userId] = params;
+          tasks = tasks.filter(t => t.session_id === sessionId || t.user_id === userId);
+          tasks.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          return [tasks.slice(0, 1)];
+        } else if (lower.includes('id = ? and user_id = ?')) {
+          const [id, userId] = params;
+          tasks = tasks.filter(t => t.id === id && t.user_id === userId);
+          return [tasks];
+        } else if (lower.includes('session_id = ?')) {
+          const [sessionId] = params;
+          tasks = tasks.filter(t => t.session_id === sessionId);
+          return [tasks];
+        } else if (lower.includes('user_id = ?')) {
+          const [userId] = params;
+          tasks = tasks.filter(t => t.user_id === userId);
+          return [tasks];
+        }
+        return [tasks];
+      }
+
+      if (lower.startsWith('insert into ai_active_tasks')) {
+        const [id, userId, sessionId, taskId, taskType, status, refEntityId, refEntityType, candidateEntities, currentStep, origReq, latestReq, ctxMeta, version, expiresAt] = params;
+        const existingIdx = this.store.ai_active_tasks.findIndex(t => t.id === id || (t.session_id === sessionId && t.user_id === userId));
+        const record = {
+          id: id || `atask_${Date.now()}`,
+          user_id: userId,
+          session_id: sessionId,
+          task_id: taskId,
+          task_type: taskType,
+          status: status || 'STARTED',
+          referenced_entity_id: refEntityId || null,
+          referenced_entity_type: refEntityType || null,
+          candidate_entities: typeof candidateEntities === 'string' ? JSON.parse(candidateEntities) : (candidateEntities || null),
+          current_step: currentStep || null,
+          original_request: origReq || null,
+          latest_request: latestReq || null,
+          context_metadata: typeof ctxMeta === 'string' ? JSON.parse(ctxMeta) : (ctxMeta || null),
+          version: existingIdx !== -1 ? (this.store.ai_active_tasks[existingIdx].version + 1) : (version || 1),
+          expires_at: expiresAt || null,
+          created_at: existingIdx !== -1 ? this.store.ai_active_tasks[existingIdx].created_at : new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        if (existingIdx !== -1) {
+          this.store.ai_active_tasks[existingIdx] = record;
+        } else {
+          this.store.ai_active_tasks.push(record);
+        }
+        return [{ insertId: record.id, affectedRows: 1 }];
+      }
+
+      if (lower.startsWith('update ai_active_tasks')) {
+        const [status, sessionId, userId] = params;
+        const target = this.store.ai_active_tasks.find(t => t.session_id === sessionId && (!userId || t.user_id === userId));
+        if (target) {
+          target.status = status;
+          target.version = (target.version || 1) + 1;
+          target.updated_at = new Date().toISOString();
+          return [{ affectedRows: 1 }];
+        }
+        return [{ affectedRows: 0 }];
+      }
+
+      if (lower.startsWith('delete from ai_active_tasks')) {
+        const prevLen = this.store.ai_active_tasks.length;
+        if (lower.includes('session_id = ? and user_id = ?')) {
+          const [sessionId, userId] = params;
+          this.store.ai_active_tasks = this.store.ai_active_tasks.filter(t => !(t.session_id === sessionId && t.user_id === userId));
+        } else if (lower.includes('session_id = ? or user_id = ?')) {
+          const [sessionId, userId] = params;
+          this.store.ai_active_tasks = this.store.ai_active_tasks.filter(t => !(t.session_id === sessionId || t.user_id === userId));
+        } else if (lower.includes('session_id = ?')) {
+          const [sessionId] = params;
+          this.store.ai_active_tasks = this.store.ai_active_tasks.filter(t => t.session_id !== sessionId);
+        } else if (lower.includes('user_id = ?')) {
+          const [userId] = params;
+          this.store.ai_active_tasks = this.store.ai_active_tasks.filter(t => t.user_id !== userId);
+        }
+        return [{ affectedRows: prevLen - this.store.ai_active_tasks.length }];
+      }
+    }
+
+    // 27. ai_idempotency_keys
+    if (lower.includes('ai_idempotency_keys')) {
+      if (lower.startsWith('select')) {
+        const [key, userId] = params;
+        const now = Date.now();
+        const records = this.store.ai_idempotency_keys.filter(k => 
+          k.idempotency_key === key && 
+          k.user_id === userId && 
+          new Date(k.expires_at).getTime() > now
+        );
+        return [records.map(r => ({ result_payload: r.result_payload, expires_at: r.expires_at }))];
+      }
+
+      if (lower.startsWith('insert into ai_idempotency_keys')) {
+        const [key, userId, toolName, reqHash, resultPayload, ttlSeconds] = params;
+        const existingIdx = this.store.ai_idempotency_keys.findIndex(k => k.idempotency_key === key);
+        const expiresAt = new Date(Date.now() + (ttlSeconds || 60) * 1000).toISOString();
+        const record = {
+          idempotency_key: key,
+          user_id: userId,
+          tool_name: toolName,
+          request_hash: reqHash,
+          result_payload: typeof resultPayload === 'string' ? JSON.parse(resultPayload) : resultPayload,
+          expires_at: expiresAt,
+          created_at: new Date().toISOString()
+        };
+
+        if (existingIdx !== -1) {
+          this.store.ai_idempotency_keys[existingIdx] = record;
+        } else {
+          this.store.ai_idempotency_keys.push(record);
+        }
+        return [{ insertId: key, affectedRows: 1 }];
+      }
+
+      if (lower.startsWith('delete from ai_idempotency_keys')) {
+        const prevLen = this.store.ai_idempotency_keys.length;
+        if (lower.includes('user_id = ?')) {
+          const [userId] = params;
+          this.store.ai_idempotency_keys = this.store.ai_idempotency_keys.filter(k => k.user_id !== userId);
+        }
+        return [{ affectedRows: prevLen - this.store.ai_idempotency_keys.length }];
+      }
+    }
+
     // Default Fallback
     if (lower.startsWith('select')) {
       return [[]];
@@ -1358,19 +1823,23 @@ const pool = {
    * In Test/Explicit Local Mock: Routes to in-memory store if MySQL is not available.
    */
   async query(sql, params = []) {
-    if (isProductionMode()) {
-      // Production MUST always execute directly on MySQL. Never catch or fallback silently.
+    if (isProductionMode() || process.env.USE_REAL_DB === 'true') {
+      // Production or explicit real DB test suite (Level 2)
       return await realPool.query(sql, params);
     }
 
-    // Non-production (Test or Development)
+    if (isTestOrMockMode()) {
+      // Fast isolated unit tests (Level 1)
+      return inMemoryEngine.execute(sql, params);
+    }
+
+    // Standard development mode: attempt real MySQL, fallback to in-memory ONLY if connection refused/missing
     try {
       return await realPool.query(sql, params);
     } catch (err) {
-      if (isTestOrMockMode()) {
+      if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' || err.code === 'EAI_AGAIN' || err.code === 'PROTOCOL_CONNECTION_LOST') {
         return inMemoryEngine.execute(sql, params);
       }
-      // If dev fallback is not enabled, propagate real MySQL error
       throw err;
     }
   },
@@ -1379,7 +1848,68 @@ const pool = {
    * Health check utility to probe MySQL connectivity directly without fallback.
    */
   async checkConnection() {
-    return await realPool.query('SELECT 1 + 1 AS solution');
+    try {
+      await realPool.query('SELECT 1 + 1 AS solution');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  },
+
+
+  /**
+   * Health check to verify database connection
+   */
+  async checkConnection() {
+    try {
+      await this.query('SELECT 1');
+      return true;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  /**
+   * Acquire a dedicated connection from real pool for transactions.
+   */
+  async getConnection() {
+    if (realPool && typeof realPool.getConnection === 'function') {
+      return await realPool.getConnection();
+    }
+    // Fallback stub for test mode if in-memory
+    return {
+      query: (sql, params) => pool.query(sql, params),
+      beginTransaction: async () => {},
+      commit: async () => {},
+      rollback: async () => {},
+      release: () => {}
+    };
+  },
+
+  /**
+   * Execute query with retry and exponential backoff
+   */
+  async queryWithRetry(sql, params = [], maxRetries = 3, baseDelayMs = 200) {
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        return await this.query(sql, params);
+      } catch (err) {
+        attempt++;
+        if (attempt >= maxRetries) throw err;
+        const delay = baseDelayMs * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  },
+
+  /**
+   * Gracefully close pool connections
+   */
+  async end() {
+    if (realPool && typeof realPool.end === 'function') {
+      return await realPool.end();
+    }
   }
 };
 

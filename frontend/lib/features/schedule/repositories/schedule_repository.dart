@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/local_storage_service.dart';
 import '../../../services/schedule_service.dart';
 import '../models/schedule_model.dart';
+import '../events/schedule_event_bus.dart';
 
 class ScheduleRepository {
   final ScheduleService scheduleService;
@@ -12,7 +13,6 @@ class ScheduleRepository {
   bool _isLoadedFromStorage = false;
 
   ScheduleRepository({required this.scheduleService}) {
-    _populateDefaultMockData();
     _initStorage();
   }
 
@@ -67,34 +67,114 @@ class ScheduleRepository {
     } catch (_) {}
   }
 
-  // Fetch list of items for a specific date (Instant response from local cache + async sync)
-  Future<List<ScheduleItem>> getScheduleForDate(DateTime date, {bool? isSeniorMode}) async {
-    if (!_isLoadedFromStorage && _localItems.isEmpty) {
-      await _loadFromStorage();
-      if (_localItems.isEmpty) {
-        _populateDefaultMockData();
+  /// Invalidate local cache for a specific date or entirely.
+  /// Safely flags storage refresh without wiping in-memory routines.
+  void invalidateCache({DateTime? date}) {
+    _isLoadedFromStorage = false;
+  }
+
+  /// Authoritatively reconcile local state with backend /api/schedule
+  Future<List<ScheduleItem>> reconcileWithRemote(String dateStr) async {
+    try {
+      final remoteData = await scheduleService.fetchSchedule(dateStr);
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        final targetYear = int.parse(parts[0]);
+        final targetMonth = int.parse(parts[1]);
+        final targetDay = int.parse(parts[2]);
+
+        if (remoteData.isNotEmpty) {
+          final remoteIds = <String>{};
+          final parsedRemote = <ScheduleItem>[];
+
+          for (var raw in remoteData) {
+            final item = ScheduleItem.fromJson(raw);
+            remoteIds.add(item.id);
+            parsedRemote.add(item);
+          }
+
+          // Invariant: Remove local items ONLY if they are marked as synced with remote and absent from remote
+          // NEVER delete unsynced items, local routines, or newly created/modified items!
+          final now = DateTime.now();
+          _localItems.removeWhere((local) =>
+            local.date.year == targetYear &&
+            local.date.month == targetMonth &&
+            local.date.day == targetDay &&
+            local.isSynced &&
+            !remoteIds.contains(local.id) &&
+            now.difference(local.updatedAt).inMinutes >= 5
+          );
+
+          // Update or add remote items, but preserve any local updates that occurred after remote item was generated
+          for (var remoteItem in parsedRemote) {
+            final idx = _localItems.indexWhere((x) => x.id == remoteItem.id);
+            if (idx != -1) {
+              final local = _localItems[idx];
+              if (local.updatedAt.isAfter(remoteItem.updatedAt)) {
+                continue;
+              }
+              _localItems[idx] = remoteItem.copyWith(isSynced: true);
+            } else {
+              _localItems.add(remoteItem.copyWith(isSynced: true));
+            }
+          }
+        } else {
+          // If remote returned an empty list for this date, do NOT wipe local or newly modified items.
+          // Only remove stale synced items that haven't been modified in the last 5 minutes.
+          final now = DateTime.now();
+          _localItems.removeWhere((local) =>
+            local.date.year == targetYear &&
+            local.date.month == targetMonth &&
+            local.date.day == targetDay &&
+            local.isSynced &&
+            now.difference(local.updatedAt).inMinutes >= 5
+          );
+        }
+
         await _saveToStorage();
       }
+    } catch (e) {
+      // Remote fetch failed, continue with local cache
+    }
+
+    final parts = dateStr.split('-');
+    if (parts.length == 3) {
+      final targetYear = int.parse(parts[0]);
+      final targetMonth = int.parse(parts[1]);
+      final targetDay = int.parse(parts[2]);
+      return _localItems.where((item) =>
+        item.date.year == targetYear &&
+        item.date.month == targetMonth &&
+        item.date.day == targetDay &&
+        item.deletedAt == null
+      ).toList()..sort((a, b) => _compareTimeStrings(a.time, b.time));
+    }
+    return [];
+  }
+
+  /// Authoritative refresh from server
+  Future<List<ScheduleItem>> refreshFromAuthoritativeSource(DateTime date, {bool? isSeniorMode}) async {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    final dateStr = "$y-$m-$d";
+    return await reconcileWithRemote(dateStr);
+  }
+
+  // Fetch list of items for a specific date (Instant response from local cache + authoritative reconciliation)
+  Future<List<ScheduleItem>> getScheduleForDate(DateTime date, {bool? isSeniorMode, bool forceRefresh = false}) async {
+    if (!_isLoadedFromStorage && _localItems.isEmpty) {
+      await _loadFromStorage();
     }
 
     final activeSeniorMode = isSeniorMode ?? LocalStorageService().isSeniorCitizen;
-    final dateStr = "${date.year}-${date.month}-${date.day}";
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    final dateStr = "$y-$m-$d";
 
-    // Non-blocking background sync
-    scheduleService.fetchSchedule(dateStr).then((remoteData) {
-      if (remoteData.isNotEmpty) {
-        for (var item in remoteData) {
-          final scheduleItem = ScheduleItem.fromJson(item);
-          final index = _localItems.indexWhere((x) => x.id == scheduleItem.id);
-          if (index != -1) {
-            _localItems[index] = scheduleItem;
-          } else {
-            _localItems.add(scheduleItem);
-          }
-        }
-        _saveToStorage();
-      }
-    }).catchError((_) {});
+    // Authoritative remote reconciliation
+    await reconcileWithRemote(dateStr);
 
     final dateMatches = _localItems.where((item) =>
       item.date.year == date.year &&
@@ -103,10 +183,12 @@ class ScheduleRepository {
       item.deletedAt == null
     ).toList();
 
-    // Ensure strict role isolation between Worker and Senior Citizen
+    // Ensure strict role isolation ONLY for local fallback routine templates
     final roleFilteredMatches = dateMatches.where((item) {
-      if (activeSeniorMode && item.id.contains('_w')) return false;
-      if (!activeSeniorMode && item.id.contains('_s')) return false;
+      final isLocalWorkerTemplate = item.id.startsWith('worker_') || item.id.endsWith('_w');
+      final isLocalSeniorTemplate = item.id.startsWith('senior_') || item.id.endsWith('_s');
+      if (activeSeniorMode && isLocalWorkerTemplate) return false;
+      if (!activeSeniorMode && isLocalSeniorTemplate) return false;
       return true;
     }).toList();
 
@@ -431,6 +513,14 @@ class ScheduleRepository {
   Future<ScheduleItem> addRoutine(ScheduleItem item) async {
     _localItems.add(item);
     await _saveToStorage();
+
+    ScheduleEventBus().publishMutation(
+      action: ScheduleActionType.create,
+      source: ScheduleChangeSource.ui,
+      entityId: item.id,
+      date: item.date,
+    );
+
     try {
       final response = await scheduleService.createScheduleItem(item.toJson());
       if (response != null) {
@@ -487,6 +577,13 @@ class ScheduleRepository {
     // Instant local save (1-click immediate response)
     await _saveToStorage();
 
+    ScheduleEventBus().publishMutation(
+      action: ScheduleActionType.update,
+      source: ScheduleChangeSource.ui,
+      entityId: updated.id,
+      date: updated.date,
+    );
+
     // Fire and forget non-blocking remote sync so UI is 100% responsive
     scheduleService.updateScheduleItem(updated.id, updated.toJson()).then((response) {
       if (response != null) {
@@ -502,6 +599,60 @@ class ScheduleRepository {
     return updated;
   }
 
+  /// Authoritatively find routine by query (e.g. "gentle garden walk") and update title, time, or status
+  Future<ScheduleItem?> updateRoutineByQuery({
+    required String query,
+    String? newTitle,
+    String? newTime,
+    ActivityStatus? status,
+    DateTime? targetDate,
+  }) async {
+    final cleanQuery = query.toLowerCase().replaceAll(RegExp(r'^[^\w]+'), '').trim();
+    final d = targetDate ?? DateTime.now();
+
+    // 1. Search matching routine on target date
+    int matchIdx = _localItems.indexWhere((x) {
+      if (x.deletedAt != null) return false;
+      if (x.date.year != d.year || x.date.month != d.month || x.date.day != d.day) return false;
+      final cleanTitle = x.title.toLowerCase().replaceAll(RegExp(r'^[^\w]+'), '').trim();
+      return cleanTitle.contains(cleanQuery) || cleanQuery.contains(cleanTitle);
+    });
+
+    // 2. If not found on target date, search across all dates
+    if (matchIdx == -1) {
+      matchIdx = _localItems.indexWhere((x) {
+        if (x.deletedAt != null) return false;
+        final cleanTitle = x.title.toLowerCase().replaceAll(RegExp(r'^[^\w]+'), '').trim();
+        return cleanTitle.contains(cleanQuery) || cleanQuery.contains(cleanTitle);
+      });
+    }
+
+    if (matchIdx != -1) {
+      final existing = _localItems[matchIdx];
+      final updated = existing.copyWith(
+        title: (newTitle != null && newTitle.trim().isNotEmpty) ? newTitle.trim() : existing.title,
+        time: (newTime != null && newTime.trim().isNotEmpty) ? newTime.trim() : existing.time,
+        status: status ?? existing.status,
+        updatedAt: DateTime.now(),
+      );
+      _localItems[matchIdx] = updated;
+      await _saveToStorage();
+
+      ScheduleEventBus().publishMutation(
+        action: ScheduleActionType.update,
+        source: ScheduleChangeSource.voice,
+        entityId: updated.id,
+        date: updated.date,
+      );
+
+      // Fire and forget remote update
+      scheduleService.updateScheduleItem(updated.id, updated.toJson()).catchError((_) => null);
+
+      return updated;
+    }
+    return null;
+  }
+
   // Delete routine
   Future<bool> deleteRoutine(String id) async {
     final index = _localItems.indexWhere((x) => x.id == id);
@@ -509,6 +660,13 @@ class ScheduleRepository {
       final item = _localItems[index];
       _localItems[index] = item.copyWith(deletedAt: DateTime.now());
       await _saveToStorage();
+
+      ScheduleEventBus().publishMutation(
+        action: ScheduleActionType.delete,
+        source: ScheduleChangeSource.ui,
+        entityId: id,
+        date: item.date,
+      );
 
       try {
         final success = await scheduleService.deleteScheduleItem(id);
@@ -548,14 +706,5 @@ class ScheduleRepository {
       await addRoutine(newItem);
     }
   }
-
-  void _populateDefaultMockData() {
-    final now = DateTime.now();
-    final monday = now.subtract(Duration(days: now.weekday - 1));
-    final isSenior = LocalStorageService().isSeniorCitizen;
-    for (int d = -7; d <= 14; d++) {
-      final day = DateTime(monday.year, monday.month, monday.day).add(Duration(days: d));
-      _localItems.addAll(_generateDefaultRoutinesForDate(day, isSeniorMode: isSenior));
-    }
-  }
 }
+

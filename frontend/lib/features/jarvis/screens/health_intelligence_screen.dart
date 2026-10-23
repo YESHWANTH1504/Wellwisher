@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../core/jarvis_colors.dart';
+import '../core/jarvis_typography.dart';
 import '../controller/health_intelligence_controller.dart';
 import '../widgets/health_overview_card.dart';
 import '../widgets/health_trend_card.dart';
@@ -7,6 +9,9 @@ import '../widgets/medication_conflict_card.dart';
 import '../widgets/doctor_question_card.dart';
 import 'doctor_briefing_screen.dart';
 
+/// Futuristic JARVIS Health Intelligence screen.
+/// Presents longitudinal biomarker trends, medication reviews, and 1-page clinician briefings
+/// while adhering strictly to non-diagnostic safety boundaries.
 class HealthIntelligenceScreen extends StatefulWidget {
   final HealthIntelligenceController? controller;
 
@@ -50,17 +55,35 @@ class _HealthIntelligenceScreenState extends State<HealthIntelligenceScreen> wit
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: JarvisColors.background,
       appBar: AppBar(
-        title: const Text('Autonomous Health Center'),
+        backgroundColor: JarvisColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: JarvisColors.cyan, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('AUTONOMOUS HEALTH INTELLIGENCE', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+            Text('Autonomous Health Center', style: JarvisTypography.titleMedium),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Intelligence',
+            icon: const Icon(Icons.refresh, color: JarvisColors.cyan),
+            tooltip: 'Sync Biomarkers',
             onPressed: () => _controller.loadAllData(),
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: JarvisColors.cyan,
+          indicatorWeight: 3,
+          labelColor: JarvisColors.cyan,
+          unselectedLabelColor: JarvisColors.textSecondary,
+          labelStyle: JarvisTypography.labelMedium,
           isScrollable: true,
           tabs: const [
             Tab(icon: Icon(Icons.trending_up, size: 18), text: 'Biomarkers'),
@@ -70,228 +93,242 @@ class _HealthIntelligenceScreenState extends State<HealthIntelligenceScreen> wit
           ],
         ),
       ),
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) {
-          if (_controller.isLoading && _controller.overview == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (_controller.errorMessage != null && _controller.overview == null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 12),
-                    Text('Error: ${_controller.errorMessage}'),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => _controller.loadAllData(),
-                      child: const Text('Retry'),
+      body: Column(
+        children: [
+          // Non-diagnostic clinical safety disclaimer banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: JarvisColors.indigo.withValues(alpha: 0.12),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 14, color: JarvisColors.cyan),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Informational only. JARVIS does not diagnose, prescribe, or replace qualified medical professionals.',
+                    style: JarvisTypography.bodySmall.copyWith(
+                      color: JarvisColors.textSecondary,
+                      fontSize: 11,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          }
+              ],
+            ),
+          ),
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              // Tab 1: Biomarker Trends & Overview
-              RefreshIndicator(
-                onRefresh: () => _controller.loadAllData(),
-                child: ListView(
-                  padding: const EdgeInsets.all(14),
-                  children: [
-                    if (_controller.overview != null)
-                      HealthOverviewCard(
-                        overview: _controller.overview!,
-                        onPrepareDoctorVisit: _generateBriefing,
-                      ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Biomarker Trajectories',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    if (_controller.trends.isEmpty)
-                      _buildEmptyState(
-                        icon: Icons.show_chart,
-                        title: 'No Trends Available Yet',
-                        subtitle: 'Upload two or more clinical reports to compute mathematical biomarker trajectories.',
-                      )
-                    else
-                      ..._controller.trends.map((t) => HealthTrendCard(trend: t)),
-                  ],
-                ),
-              ),
+          Expanded(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                if (_controller.isLoading && _controller.overview == null) {
+                  return const Center(child: CircularProgressIndicator(color: JarvisColors.cyan));
+                }
 
-              // Tab 2: Health Alerts
-              RefreshIndicator(
-                onRefresh: () => _controller.loadAllData(),
-                child: ListView(
-                  padding: const EdgeInsets.all(14),
-                  children: [
-                    const Text(
-                      'Proactive Health Observations',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    if (_controller.alerts.isEmpty)
-                      _buildEmptyState(
-                        icon: Icons.check_circle_outline,
-                        title: 'No Active Health Alerts',
-                        subtitle: 'All tracked biomarker patterns are within standard consistency parameters.',
-                      )
-                    else
-                      ..._controller.alerts.map((a) => HealthAlertCard(
-                            alert: a,
-                            onDismiss: () => _controller.dismissAlert(a.id),
-                          )),
-                  ],
-                ),
-              ),
-
-              // Tab 3: Medication Reconciliation
-              RefreshIndicator(
-                onRefresh: () => _controller.loadAllData(),
-                child: ListView(
-                  padding: const EdgeInsets.all(14),
-                  children: [
-                    const Text(
-                      'Medication Reconciliation Points',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Items identified for clinician review during your next consultation.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                    ),
-                    const SizedBox(height: 10),
-                    if (_controller.medicationReconciliation == null ||
-                        _controller.medicationReconciliation!.potentialConcerns.isEmpty)
-                      _buildEmptyState(
-                        icon: Icons.check_circle_outline,
-                        title: 'No Medication Review Items',
-                        subtitle: 'Your active schedule aligns with extracted prescription records.',
-                      )
-                    else
-                      ..._controller.medicationReconciliation!.potentialConcerns
-                          .map((c) => MedicationConflictCard(concern: c)),
-                  ],
-                ),
-              ),
-
-              // Tab 4: Doctor Briefings & Questions
-              RefreshIndicator(
-                onRefresh: () => _controller.loadAllData(),
-                child: ListView(
-                  padding: const EdgeInsets.all(14),
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Doctor Visit Preparation',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _generateBriefing,
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('New Briefing'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal.shade700,
-                            foregroundColor: Colors.white,
+                if (_controller.errorMessage != null && _controller.overview == null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, size: 48, color: JarvisColors.rose),
+                          const SizedBox(height: 12),
+                          Text(_controller.errorMessage!, style: JarvisTypography.bodyMedium),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () => _controller.loadAllData(),
+                            style: ElevatedButton.styleFrom(backgroundColor: JarvisColors.cyan),
+                            child: const Text('Retry Intelligence Sync', style: TextStyle(color: Colors.black)),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    if (_controller.overview?.doctorQuestions.isNotEmpty ?? false) ...[
-                      const Text(
-                        'Questions to Ask Your Healthcare Provider',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      ..._controller.overview!.doctorQuestions
-                          .asMap()
-                          .entries
-                          .map((entry) => DoctorQuestionCard(question: entry.value, index: entry.key + 1)),
-                      const SizedBox(height: 16),
-                    ],
-                    const Text(
-                      'Saved Briefings',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
-                    if (_controller.briefings.isEmpty)
-                      _buildEmptyState(
-                        icon: Icons.description_outlined,
-                        title: 'No Saved Briefings',
-                        subtitle: 'Tap "New Briefing" to compile a 1-page health summary for your clinician.',
-                      )
-                    else
-                      ..._controller.briefings.map((b) => Card(
-                            elevation: 1,
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              leading: const CircleAvatar(
-                                backgroundColor: Colors.teal,
-                                child: Icon(Icons.assignment_outlined, color: Colors.white, size: 20),
-                              ),
-                              title: Text('Briefing: ${b.generatedAt.split('T')[0]}'),
-                              subtitle: Text('Status: ${b.status} | ${b.sourceDocumentIds.length} Source Records'),
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => DoctorBriefingScreen(briefing: b)),
-                                );
-                              },
-                            ),
-                          )),
+                  );
+                }
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildBiomarkersTab(),
+                    _buildAlertsTab(),
+                    _buildMedicationsTab(),
+                    _buildBriefingsTab(),
                   ],
-                ),
-              ),
-            ],
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 40, color: Colors.grey.shade500),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
+  Widget _buildBiomarkersTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (_controller.overview != null)
+          HealthOverviewCard(overview: _controller.overview!),
+        const SizedBox(height: 16),
+        Text('LONGITUDINAL BIOMARKER TRENDS', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+        const SizedBox(height: 8),
+        if (_controller.trends.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: JarvisColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: JarvisColors.border),
+            ),
+            child: Center(
+              child: Text('No extracted biomarker records yet.', style: JarvisTypography.bodyMedium.copyWith(color: JarvisColors.textSecondary)),
+            ),
+          )
+        else
+          ..._controller.trends.map((t) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: HealthTrendCard(trend: t),
+              )),
+      ],
+    );
+  }
+
+  Widget _buildAlertsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Proactive Health Observations', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.rose)),
+        const SizedBox(height: 8),
+        if (_controller.alerts.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: JarvisColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: JarvisColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: JarvisColors.emerald, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('All biomarker telemetry is currently within baseline ranges.', style: JarvisTypography.bodyMedium),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._controller.alerts.map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: HealthAlertCard(alert: a),
+              )),
+      ],
+    );
+  }
+
+  Widget _buildMedicationsTab() {
+    final concerns = _controller.medicationReconciliation?.potentialConcerns ?? [];
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Medication Reconciliation Points', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.amber)),
+        const SizedBox(height: 8),
+        if (concerns.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: JarvisColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: JarvisColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.shield_outlined, color: JarvisColors.emerald, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('No adverse drug interactions or schedule conflicts detected.', style: JarvisTypography.bodyMedium),
+                ),
+              ],
+            ),
+          )
+        else
+          ...concerns.map((c) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: MedicationConflictCard(concern: c),
+              )),
+      ],
+    );
+  }
+
+  Widget _buildBriefingsTab() {
+    final questions = _controller.overview?.doctorQuestions ?? [];
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: JarvisColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: JarvisColors.cyan.withValues(alpha: 0.3)),
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: JarvisColors.cyan.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.medical_services_outlined, color: JarvisColors.cyan, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Doctor Visit Preparation', style: JarvisTypography.titleSmall),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Generate an organized, non-diagnostic synthesis of recent vitals, biomarker differentials, and discussion questions for your next doctor visit.',
+                style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary),
+              ),
+              const SizedBox(height: 14),
+              ElevatedButton.icon(
+                onPressed: _generateBriefing,
+                icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.black),
+                label: const Text('Generate Briefing Package', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: JarvisColors.cyan,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Text('RECOMMENDED CLINICIAN DISCUSSION POINTS', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.indigo)),
+        const SizedBox(height: 8),
+        if (questions.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: JarvisColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: JarvisColors.border),
+            ),
+            child: Text('Questions will appear automatically based on recent biomarker changes.', style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary)),
+          )
+        else
+          ...questions.asMap().entries.map((entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: DoctorQuestionCard(question: entry.value, index: entry.key + 1),
+              )),
+      ],
     );
   }
 }

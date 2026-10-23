@@ -9,9 +9,12 @@ const { EXECUTION_STATUS } = require('../tools');
 const AiConversationRepository = require('../../../repositories/ai/aiConversationRepository');
 const { AiAgentRunRepository } = require('../../../repositories/ai/aiAgentRunRepository');
 
+const { aiModelRouter } = require('../providers/AIModelRouter');
+
 class JarvisAgent {
   constructor(options = {}) {
-    this.llmAdapter = options.llmAdapter || new LLMAdapter(options);
+    this.modelRouter = options.modelRouter || options.aiModelRouter || aiModelRouter;
+    this.llmAdapter = options.llmAdapter || new LLMAdapter({ router: this.modelRouter, ...options });
   }
 
   /**
@@ -44,6 +47,14 @@ class JarvisAgent {
           title: trimmedRequest ? trimmedRequest.substring(0, 40) : 'JARVIS Session'
         });
         conversationId = conv.id;
+      } else {
+        const existingConv = await AiConversationRepository.getConversationById(conversationId, userId);
+        if (!existingConv) {
+          await AiConversationRepository.createConversation(userId, {
+            id: conversationId,
+            title: trimmedRequest ? trimmedRequest.substring(0, 40) : 'JARVIS Session'
+          });
+        }
       }
 
       // Persist User Message Turn
@@ -156,7 +167,8 @@ class JarvisAgent {
           intent: planOutput.intent,
           message: confMsg,
           agentRunId: agentRun.id,
-          conversationId
+          conversationId,
+          steps: executionResult.results
         });
       }
 
@@ -172,7 +184,8 @@ class JarvisAgent {
           errorCode: executionResult.errorCode || 'EXECUTION_FAILED',
           message: executionResult.message || 'Tool execution failed.',
           agentRunId: agentRun.id,
-          conversationId
+          conversationId,
+          steps: executionResult.results
         });
       }
 
@@ -201,7 +214,8 @@ class JarvisAgent {
         actionData: executionResult.results[0]?.data,
         intent: planOutput.intent,
         agentRunId: agentRun.id,
-        conversationId
+        conversationId,
+        steps: executionResult.results
       });
     } catch (err) {
       console.error('JARVIS Orchestrator Exception:', err);

@@ -13,13 +13,13 @@ class ConfirmationManager {
   /**
    * Issue a short-lived, single-use confirmation token for a pending high-risk action
    */
-  createToken({ userId, agentRunId, tool, arguments: toolArgs, ttlMinutes = 5 }) {
+  createToken({ userId, agentRunId, tool, arguments: toolArgs, ttlMinutes = 5, ttlMs }) {
     if (!userId || !tool) {
       throw new Error('userId and tool are required to create a confirmation token.');
     }
 
     const confirmationId = `conf_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
-    const expiresAt = Date.now() + ttlMinutes * 60 * 1000;
+    const expiresAt = Date.now() + (ttlMs !== undefined ? ttlMs : ttlMinutes * 60 * 1000);
     const argsHash = this._hashArguments(toolArgs || {});
 
     const record = {

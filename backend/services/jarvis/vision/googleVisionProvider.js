@@ -6,7 +6,7 @@ class GoogleVisionProvider extends VisionProvider {
   constructor(options = {}) {
     super();
     this.apiKey = options.apiKey || (process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : '');
-    this.modelName = options.modelName || process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+    this.modelName = options.modelName || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     this.localFallback = new LocalOCRProvider(options);
     this.aiClient = null;
 

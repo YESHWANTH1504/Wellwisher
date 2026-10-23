@@ -32,17 +32,17 @@ class ConfirmationCard extends StatelessWidget {
     final args = confirmation.arguments;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2C),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFD600).withValues(alpha: 0.6), width: 1.5),
+        color: const Color(0xFF161928),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFFD166).withValues(alpha: 0.4), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFD600).withValues(alpha: 0.12),
-            blurRadius: 12,
-            spreadRadius: 2,
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -51,28 +51,36 @@ class ConfirmationCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Color(0xFFFFD600), size: 24),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD166).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.shield_outlined, color: Color(0xFFFFD166), size: 18),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.5,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           if (args.isNotEmpty) ...[
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.black26,
+                color: const Color(0xFF0F121E),
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white10),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,35 +89,41 @@ class ConfirmationCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Text(
                       '• ${e.key}: ${e.value}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 12.5),
                     ),
                   );
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
           ],
           const Text(
             '⚠️ This action requires your explicit permission to proceed.',
-            style: TextStyle(color: Colors.white60, fontSize: 12, fontStyle: FontStyle.italic),
+            style: TextStyle(color: Colors.white54, fontSize: 11.5, fontStyle: FontStyle.italic),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(
                 onPressed: onCancel,
-                child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  foregroundColor: Colors.white60,
+                ),
+                child: const Text('Cancel', style: TextStyle(fontSize: 13)),
               ),
               const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: onConfirm,
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Confirm'),
+                icon: const Icon(Icons.check_rounded, size: 16),
+                label: const Text('Confirm', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD600),
+                  backgroundColor: const Color(0xFFFFD166),
                   foregroundColor: Colors.black87,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 0,
                 ),
               ),
             ],

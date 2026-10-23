@@ -6,7 +6,7 @@ class AppTheme {
       case 'green': return const Color(0xFF2E7D32); // Emerald Green
       case 'violet': return const Color(0xFF6A1B9A); // Sunset Violet
       case 'pink': return const Color(0xFFD81B60); // Rose Pink
-      default: return const Color(0xFF1E88E5); // Ocean Blue
+      default: return const Color(0xFF1565C0); // Ocean Blue (Darker, rich contrast)
     }
   }
 
@@ -26,8 +26,11 @@ class AppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
         primary: primaryColor,
+        secondary: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF),
+        onSecondary: Colors.white,
         brightness: isDark ? Brightness.dark : Brightness.light,
         surface: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        onSurface: isDark ? Colors.white : const Color(0xFF0F172A),
       ),
       scaffoldBackgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8FAFC),
       canvasColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,

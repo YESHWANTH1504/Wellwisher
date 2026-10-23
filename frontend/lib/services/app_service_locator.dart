@@ -8,10 +8,15 @@ import '../features/screen_care/controller/screen_care_controller.dart';
 
 import 'notification_service.dart';
 import 'hydration_service.dart';
+import '../features/jarvis/services/health_repository.dart';
+import '../features/jarvis/controller/jarvis_health_controller.dart';
+
+import 'jarvis_native_bridge.dart';
 
 class AppServiceLocator {
   static final AppServiceLocator _instance = AppServiceLocator._internal();
   factory AppServiceLocator() => _instance;
+  static AppServiceLocator get instance => _instance;
   AppServiceLocator._internal();
 
   LocalStorageService? _localStorageService;
@@ -22,10 +27,22 @@ class AppServiceLocator {
   ScreenCareController? _screenCareController;
   ScheduleController? _scheduleController;
   HydrationService? _hydrationService;
+  HealthRepository? _healthRepository;
+  JarvisHealthController? _healthController;
 
   Future<void> init() async {
     _localStorageService ??= LocalStorageService();
     await _localStorageService!.init();
+
+    // Sync saved token and registered username to native Android services
+    final token = _localStorageService!.jwtToken;
+    if (token != null && token.isNotEmpty) {
+      JarvisNativeBridge.setAuthToken(token);
+    }
+    final name = _localStorageService!.userName;
+    if (name != null && name.isNotEmpty && !name.contains('@')) {
+      JarvisNativeBridge.setUserName(name);
+    }
 
     _hydrationService ??= HydrationService();
     await _hydrationService!.init();
@@ -74,4 +91,7 @@ class AppServiceLocator {
     }
     return _scheduleController!;
   }
+
+  HealthRepository get healthRepository => _healthRepository ??= HealthRepository();
+  JarvisHealthController get healthController => _healthController ??= JarvisHealthController(repository: healthRepository);
 }

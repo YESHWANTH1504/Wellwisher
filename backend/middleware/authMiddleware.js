@@ -2,13 +2,11 @@ const jwt = require('jsonwebtoken');
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
-  if (!secret || secret.trim() === '') {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing in production mode.');
+  if (!secret || secret.trim().length < 32) {
+    if (process.env.NODE_ENV === 'test') {
+      return 'wellwisher_test_suite_jwt_secret_32_chars_long!';
     }
-    // Development fallback with explicit console warning
-    console.warn('⚠️ [SECURITY WARNING] JWT_SECRET is not configured in .env. Using ephemeral development key.');
-    return 'wellwisher_dev_ephemeral_jwt_secret_2026';
+    throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing or shorter than 32 characters.');
   }
   return secret.trim();
 }
@@ -40,6 +38,7 @@ const verifyToken = (req, res, next) => {
     });
   }
 
+  // Verify token strictly via JWT secret - no demo or fallback tokens permitted in production
   try {
     const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret);
@@ -53,8 +52,11 @@ const verifyToken = (req, res, next) => {
     }
 
     // Attach authenticated user identity strictly from JWT
-    req.userId = parseInt(decoded.id, 10);
+    const uid = parseInt(decoded.id, 10);
+    req.userId = uid;
+    req.user = { id: uid, email: decoded.email || '', name: decoded.name || '' };
     req.userEmail = decoded.email || '';
+    req.userName = decoded.name || '';
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {

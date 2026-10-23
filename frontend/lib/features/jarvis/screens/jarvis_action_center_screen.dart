@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import '../core/jarvis_colors.dart';
+import '../core/jarvis_typography.dart';
 import '../controller/workflow_controller.dart';
-import '../models/workflow_models.dart';
 import '../widgets/action_center_header.dart';
 import '../widgets/pending_confirmation_card.dart';
 import '../widgets/appointment_action_card.dart';
 import '../widgets/medication_action_card.dart';
 import '../widgets/calendar_conflict_card.dart';
 
+/// Futuristic JARVIS Action Center Screen.
+/// Manages pending cryptographic approvals, doctor visit briefings, schedule conflicts, and medication reviews.
 class JarvisActionCenterScreen extends StatefulWidget {
   final WorkflowController? controller;
 
@@ -41,7 +44,7 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
+      builder: (ctx) => const Center(child: CircularProgressIndicator(color: JarvisColors.cyan)),
     );
 
     final res = await _controller.prepareVisitBriefing(appointmentId);
@@ -50,7 +53,7 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
     if (context.mounted && res != null) {
       showModalBottomSheet(
         context: context,
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: JarvisColors.surfaceElevated,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -63,21 +66,21 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
             children: [
               Row(
                 children: [
-                  const Icon(Icons.description, color: Colors.cyanAccent, size: 24),
+                  const Icon(Icons.description, color: JarvisColors.cyan, size: 24),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Doctor Visit Briefing Package',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: JarvisTypography.titleMedium,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white60),
+                    icon: const Icon(Icons.close, color: JarvisColors.textSecondary),
                     onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
               ),
-              const Divider(color: Colors.white24),
+              const Divider(color: JarvisColors.border),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -86,34 +89,35 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.cyan.withAlpha(25),
+                          color: JarvisColors.cyan.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: JarvisColors.cyan.withValues(alpha: 0.3)),
                         ),
                         child: Text(
                           'Briefing ID: ${res['briefingId'] ?? 'N/A'}\nStatus: READY for Consultation',
-                          style: const TextStyle(color: Colors.cyanAccent, fontSize: 13),
+                          style: JarvisTypography.monospace.copyWith(color: JarvisColors.cyan, fontSize: 12),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         '1-Page Briefing Contents:',
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        style: JarvisTypography.titleSmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         res['briefing'] != null ? res['briefing'].toString() : 'Briefing data compiled successfully.',
-                        style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                        style: JarvisTypography.bodyMedium.copyWith(color: JarvisColors.textSecondary),
                       ),
                       const SizedBox(height: 20),
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(10),
+                          color: JarvisColors.indigo.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           res['disclaimer']?.toString() ?? 'Non-diagnostic informational summary.',
-                          style: const TextStyle(color: Colors.white38, fontSize: 11),
+                          style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textDisabled, fontSize: 11),
                         ),
                       ),
                     ],
@@ -135,39 +139,39 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Record Visit Follow-up', style: TextStyle(color: Colors.white)),
+        backgroundColor: JarvisColors.surfaceElevated,
+        title: Text('Record Visit Follow-up', style: JarvisTypography.titleMedium),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: instructionsController,
-                style: const TextStyle(color: Colors.white),
+                style: JarvisTypography.bodyMedium,
                 decoration: const InputDecoration(
                   labelText: 'Doctor Instructions (as stated)',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  labelStyle: TextStyle(color: JarvisColors.textSecondary),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: JarvisColors.border)),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: followUpDateController,
-                style: const TextStyle(color: Colors.white),
+                style: JarvisTypography.bodyMedium,
                 decoration: const InputDecoration(
                   labelText: 'Follow-up Date (YYYY-MM-DD)',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  labelStyle: TextStyle(color: JarvisColors.textSecondary),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: JarvisColors.border)),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: testsController,
-                style: const TextStyle(color: Colors.white),
+                style: JarvisTypography.bodyMedium,
                 decoration: const InputDecoration(
-                  labelText: 'Requested Tests (comma separated)',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  labelText: 'Ordered Lab Tests (comma-separated)',
+                  labelStyle: TextStyle(color: JarvisColors.textSecondary),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: JarvisColors.border)),
                 ),
               ),
             ],
@@ -176,25 +180,29 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+            child: const Text('Cancel', style: TextStyle(color: JarvisColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final tests = testsController.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-              await _controller.completeAppointment(appointmentId, {
-                'doctorInstructions': instructionsController.text,
-                'followUpDate': followUpDateController.text.isNotEmpty ? followUpDateController.text : null,
-                'testsRequested': tests
-              });
-              if (context.mounted) {
+              final payload = {
+                if (instructionsController.text.isNotEmpty) 'doctorInstructions': instructionsController.text,
+                if (followUpDateController.text.isNotEmpty) 'followUpDate': followUpDateController.text,
+                if (testsController.text.isNotEmpty)
+                  'testsOrdered': testsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+              };
+              final res = await _controller.completeAppointment(appointmentId, payload);
+              if (context.mounted && res != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Appointment completed and follow-ups created!')),
+                  const SnackBar(
+                    content: Text('Appointment completed and follow-ups created!'),
+                    backgroundColor: JarvisColors.surfaceElevated,
+                  ),
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.tealAccent, foregroundColor: Colors.black87),
-            child: const Text('Save Follow-ups'),
+            style: ElevatedButton.styleFrom(backgroundColor: JarvisColors.cyan, foregroundColor: Colors.black87),
+            child: const Text('Save Follow-ups', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -210,49 +218,49 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Plan Doctor Appointment', style: TextStyle(color: Colors.white)),
+        backgroundColor: JarvisColors.surfaceElevated,
+        title: Text('Plan Doctor Appointment', style: JarvisTypography.titleMedium),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleController,
-                style: const TextStyle(color: Colors.white),
+                style: JarvisTypography.bodyMedium,
                 decoration: const InputDecoration(
                   labelText: 'Appointment Title *',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  labelStyle: TextStyle(color: JarvisColors.textSecondary),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: JarvisColors.border)),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: doctorController,
-                style: const TextStyle(color: Colors.white),
+                style: JarvisTypography.bodyMedium,
                 decoration: const InputDecoration(
                   labelText: 'Doctor / Specialist Name',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  labelStyle: TextStyle(color: JarvisColors.textSecondary),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: JarvisColors.border)),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: dateController,
-                style: const TextStyle(color: Colors.white),
+                style: JarvisTypography.bodyMedium,
                 decoration: const InputDecoration(
                   labelText: 'Scheduled Date (YYYY-MM-DD) *',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  labelStyle: TextStyle(color: JarvisColors.textSecondary),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: JarvisColors.border)),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: locationController,
-                style: const TextStyle(color: Colors.white),
+                style: JarvisTypography.bodyMedium,
                 decoration: const InputDecoration(
                   labelText: 'Location / Clinic Room',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  labelStyle: TextStyle(color: JarvisColors.textSecondary),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: JarvisColors.border)),
                 ),
               ),
             ],
@@ -261,7 +269,7 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+            child: const Text('Cancel', style: TextStyle(color: JarvisColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -270,12 +278,15 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
               await _controller.loadActionCenter();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Appointment planned successfully!')),
+                  const SnackBar(
+                    content: Text('Appointment planned on JARVIS timeline.'),
+                    backgroundColor: JarvisColors.surfaceElevated,
+                  ),
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, foregroundColor: Colors.black87),
-            child: const Text('Create'),
+            style: ElevatedButton.styleFrom(backgroundColor: JarvisColors.cyan, foregroundColor: Colors.black87),
+            child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -290,42 +301,56 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
         final overview = _controller.overview;
 
         return Scaffold(
-          backgroundColor: const Color(0xFF0F172A),
+          backgroundColor: JarvisColors.background,
           appBar: AppBar(
-            backgroundColor: const Color(0xFF0F172A),
+            backgroundColor: JarvisColors.surface,
             elevation: 0,
-            title: const Text('JARVIS Action Center', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: JarvisColors.cyan, size: 18),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('ATTENTION & CONSENT HUB', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+                Text('JARVIS Action Center', style: JarvisTypography.titleMedium),
+              ],
+            ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white70),
+                icon: const Icon(Icons.refresh, color: JarvisColors.cyan),
+                tooltip: 'Sync Actions',
                 onPressed: () => _controller.loadActionCenter(),
               ),
             ],
             bottom: TabBar(
               controller: _tabController,
-              indicatorColor: Colors.cyanAccent,
-              labelColor: Colors.cyanAccent,
-              unselectedLabelColor: Colors.white60,
+              indicatorColor: JarvisColors.cyan,
+              indicatorWeight: 3,
+              labelColor: JarvisColors.cyan,
+              unselectedLabelColor: JarvisColors.textSecondary,
+              labelStyle: JarvisTypography.labelMedium,
               isScrollable: true,
               tabs: [
-                Tab(text: 'Pending (${_controller.pendingActions.length})'),
-                Tab(text: 'Appts (${_controller.appointments.length})'),
-                Tab(text: 'Calendar (${_controller.calendarEvents.length})'),
-                const Tab(text: 'Medication'),
+                Tab(text: 'Pending Approvals (${_controller.pendingActions.length})'),
+                Tab(text: 'Appointments (${_controller.appointments.length})'),
+                Tab(text: 'Calendar Events (${_controller.calendarEvents.length})'),
+                const Tab(text: 'Medication Safety'),
               ],
             ),
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showNewAppointmentDialog(context),
-            backgroundColor: Colors.cyanAccent,
+            backgroundColor: JarvisColors.cyan,
             foregroundColor: Colors.black87,
             icon: const Icon(Icons.add),
-            label: const Text('Plan Appointment'),
+            label: const Text('Plan Appointment', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           body: _controller.isLoading && overview == null
-              ? const Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
+              ? const Center(child: CircularProgressIndicator(color: JarvisColors.cyan))
               : RefreshIndicator(
                   onRefresh: () => _controller.loadActionCenter(),
+                  color: JarvisColors.cyan,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: Column(
@@ -341,14 +366,85 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
                           child: TabBarView(
                             controller: _tabController,
                             children: [
-                              // Tab 1: Pending Actions
-                              _buildPendingTab(_controller),
-                              // Tab 2: Appointments
-                              _buildAppointmentsTab(_controller),
-                              // Tab 3: Calendar
-                              _buildCalendarTab(_controller),
-                              // Tab 4: Medication Overview
-                              _buildMedicationTab(_controller),
+                              // 1. Pending Confirmations
+                              _controller.pendingActions.isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.verified_user_outlined, size: 54, color: JarvisColors.emerald.withValues(alpha: 0.5)),
+                                          const SizedBox(height: 12),
+                                          Text('All autonomous actions verified.', style: JarvisTypography.bodyLarge),
+                                          Text('No high-risk operations awaiting consent.', style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary)),
+                                        ],
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: _controller.pendingActions.length,
+                                      itemBuilder: (ctx, i) => PendingConfirmationCard(
+                                        action: _controller.pendingActions[i],
+                                        onConfirm: () => _controller.confirmAction(_controller.pendingActions[i].id),
+                                        onDismiss: () => _controller.dismissAction(_controller.pendingActions[i].id),
+                                      ),
+                                    ),
+
+                              // 2. Appointments
+                              _controller.appointments.isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.calendar_today_outlined, size: 54, color: JarvisColors.textDisabled),
+                                          const SizedBox(height: 12),
+                                          Text('No upcoming appointments scheduled.', style: JarvisTypography.bodyLarge),
+                                        ],
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: _controller.appointments.length,
+                                      itemBuilder: (ctx, i) => AppointmentActionCard(
+                                        appointment: _controller.appointments[i],
+                                        onPrepareBriefing: () => _showPrepareBriefingDialog(context, _controller.appointments[i].id),
+                                        onCompleteVisit: () => _showCompleteVisitDialog(context, _controller.appointments[i].id),
+                                      ),
+                                    ),
+
+                              // 3. Calendar Events & Conflicts
+                              _controller.calendarEvents.isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.event_available_outlined, size: 54, color: JarvisColors.textDisabled),
+                                          const SizedBox(height: 12),
+                                          Text('No calendar conflicts detected today.', style: JarvisTypography.bodyLarge),
+                                        ],
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: _controller.calendarEvents.length,
+                                      itemBuilder: (ctx, i) => CalendarConflictCard(
+                                        event: _controller.calendarEvents[i],
+                                      ),
+                                    ),
+
+                              // 4. Medication Actions
+                              overview?.medicationWorkflow == null
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.medication_outlined, size: 54, color: JarvisColors.textDisabled),
+                                          const SizedBox(height: 12),
+                                          Text('Medication schedules synchronized.', style: JarvisTypography.bodyLarge),
+                                        ],
+                                      ),
+                                    )
+                                  : ListView(
+                                      children: [
+                                        MedicationActionCard(overview: overview!.medicationWorkflow!),
+                                      ],
+                                    ),
                             ],
                           ),
                         ),
@@ -358,87 +454,6 @@ class _JarvisActionCenterScreenState extends State<JarvisActionCenterScreen> wit
                 ),
         );
       },
-    );
-  }
-
-  Widget _buildPendingTab(WorkflowController controller) {
-    if (controller.pendingActions.isEmpty) {
-      return const Center(
-        child: Text(
-          'No pending actions requiring confirmation.',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: controller.pendingActions.length,
-      itemBuilder: (ctx, index) {
-        final action = controller.pendingActions[index];
-        return PendingConfirmationCard(
-          action: action,
-          onConfirm: () => controller.confirmAction(action.id),
-          onDismiss: () => controller.dismissAction(action.id),
-        );
-      },
-    );
-  }
-
-  Widget _buildAppointmentsTab(WorkflowController controller) {
-    if (controller.appointments.isEmpty) {
-      return const Center(
-        child: Text(
-          'No upcoming doctor appointments recorded.',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: controller.appointments.length,
-      itemBuilder: (ctx, index) {
-        final apt = controller.appointments[index];
-        return AppointmentActionCard(
-          appointment: apt,
-          onPrepareBriefing: () => _showPrepareBriefingDialog(context, apt.id),
-          onCompleteVisit: () => _showCompleteVisitDialog(context, apt.id),
-        );
-      },
-    );
-  }
-
-  Widget _buildCalendarTab(WorkflowController controller) {
-    if (controller.calendarEvents.isEmpty) {
-      return const Center(
-        child: Text(
-          'No calendar events scheduled for today.',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: controller.calendarEvents.length,
-      itemBuilder: (ctx, index) {
-        final ev = controller.calendarEvents[index];
-        return CalendarConflictCard(event: ev);
-      },
-    );
-  }
-
-  Widget _buildMedicationTab(WorkflowController controller) {
-    final medOverview = controller.overview?.medicationWorkflow;
-    if (medOverview == null) {
-      return const Center(
-        child: Text(
-          'Medication routine coverage analysis loaded.',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      child: MedicationActionCard(overview: medOverview),
     );
   }
 }

@@ -11,7 +11,7 @@ class HealthIntelligenceController {
    */
   static async getTrends(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
       let trends = await AiHealthIntelligenceRepository.getTrends(userId);
@@ -34,7 +34,7 @@ class HealthIntelligenceController {
    */
   static async getAlerts(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
       let alerts = await AiHealthIntelligenceRepository.getActiveAlerts(userId);
@@ -57,7 +57,7 @@ class HealthIntelligenceController {
    */
   static async dismissAlert(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       const { id } = req.params;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
@@ -73,7 +73,7 @@ class HealthIntelligenceController {
    */
   static async getMedicationConflicts(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
       const reconciliation = await MedicationIntelligenceEngine.reconcileMedications(userId);
@@ -88,7 +88,7 @@ class HealthIntelligenceController {
    */
   static async getOverview(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
       const trends = await HealthTrendEngine.computeUserTrends(userId);
@@ -120,7 +120,7 @@ class HealthIntelligenceController {
    */
   static async generateDoctorBriefing(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
       const briefing = await DoctorVisitPreparationEngine.generateBriefing(userId);
@@ -135,7 +135,7 @@ class HealthIntelligenceController {
    */
   static async getDoctorBriefingById(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       const { id } = req.params;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
@@ -153,7 +153,7 @@ class HealthIntelligenceController {
    */
   static async getDoctorBriefings(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
       const briefings = await AiHealthIntelligenceRepository.getDoctorBriefings(userId);
@@ -169,7 +169,7 @@ class HealthIntelligenceController {
    */
   static async exportHealthData(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
       const trends = await AiHealthIntelligenceRepository.getTrends(userId);
@@ -198,7 +198,7 @@ class HealthIntelligenceController {
    */
   static async clearHealthIntelligenceData(req, res) {
     try {
-      const userId = req.user?.id;
+      const userId = req.userId || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Authentication required.' });
 
       await AiHealthIntelligenceRepository.clearHealthIntelligenceData(userId);

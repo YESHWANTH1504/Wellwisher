@@ -17,21 +17,55 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- 2. Routines / Schedule Table (Authoritative Single Source of Truth for Schedules)
+-- 2A. Routine Templates Table (Authoritative Recurring Routine Definitions)
+CREATE TABLE IF NOT EXISTS routine_templates (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    weekday_mask VARCHAR(50) NOT NULL, -- e.g. '1,2,3,4,5' for Mon-Fri, '6' for Sat, '0' for Sun
+    start_time VARCHAR(50) NOT NULL,
+    end_time VARCHAR(50) NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'routine',
+    event_type VARCHAR(50) NOT NULL DEFAULT 'routine',
+    enabled TINYINT(1) DEFAULT 1,
+    reminder_enabled TINYINT(1) DEFAULT 1,
+    reminder_offset INT DEFAULT 0,
+    recurrence_rule VARCHAR(100) DEFAULT 'WEEKLY',
+    timezone VARCHAR(50) DEFAULT 'UTC',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_routine_templates_user (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 2B. Routines / Calendar Events Table (Authoritative Single Source of Truth for Schedule Instances & Tasks)
 CREATE TABLE IF NOT EXISTS routines (
     id VARCHAR(64) PRIMARY KEY,
     user_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    time VARCHAR(50) NOT NULL,
-    category VARCHAR(50) NOT NULL DEFAULT 'other',
-    status VARCHAR(50) NOT NULL DEFAULT 'upcoming',
+    time VARCHAR(50) NOT NULL, -- start time e.g. '07:00' or '07:00 AM'
+    end_time VARCHAR(50) NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'routine',
+    event_type VARCHAR(50) NOT NULL DEFAULT 'routine',
+    status VARCHAR(50) NOT NULL DEFAULT 'scheduled', -- 'scheduled', 'completed', 'skipped', 'cancelled'
     date DATE NOT NULL,
+    timezone VARCHAR(50) DEFAULT 'UTC',
+    is_all_day TINYINT(1) DEFAULT 0,
+    recurrence_group_id VARCHAR(64) NULL,
+    template_id VARCHAR(64) NULL,
+    source VARCHAR(50) DEFAULT 'manual', -- 'routine', 'manual', 'voice', 'system'
     reminder_enabled TINYINT(1) DEFAULT 1,
+    reminder_minutes_before INT DEFAULT 0,
+    priority VARCHAR(20) DEFAULT 'normal',
+    completed_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
     INDEX idx_routines_user_date (user_id, date),
+    INDEX idx_routines_user_template (user_id, template_id),
+    UNIQUE KEY uk_user_template_date (user_id, template_id, date),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -580,6 +614,106 @@ CREATE TABLE IF NOT EXISTS ai_workflow_actions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 31. AI Active Tasks Table (Phase 1)
+CREATE TABLE IF NOT EXISTS ai_active_tasks (
+    id VARCHAR(128) PRIMARY KEY,
+    user_id INT NOT NULL,
+    session_id VARCHAR(128) NOT NULL,
+    task_id VARCHAR(128) NOT NULL,
+    task_type VARCHAR(64) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'STARTED',
+    referenced_entity_id VARCHAR(128) NULL,
+    referenced_entity_type VARCHAR(64) NULL,
+    candidate_entities JSON NULL,
+    current_step VARCHAR(64) NULL,
+    original_request TEXT NULL,
+    latest_request TEXT NULL,
+    context_metadata JSON NULL,
+    version INT NOT NULL DEFAULT 1,
+    expires_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_active_tasks_user_session (user_id, session_id),
+    INDEX idx_active_tasks_status (status),
+    INDEX idx_active_tasks_expires (expires_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
+-- 32. AI Idempotency Keys Table (Phase 1)
+CREATE TABLE IF NOT EXISTS ai_idempotency_keys (
+    idempotency_key VARCHAR(255) PRIMARY KEY,
+    user_id INT NOT NULL,
+    tool_name VARCHAR(100) NOT NULL,
+    request_hash VARCHAR(64) NOT NULL,
+    result_payload JSON NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_idempotency_user_expires (user_id, expires_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
+-- 33. JARVIS Devices Table
+CREATE TABLE IF NOT EXISTS jarvis_devices (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    device_id VARCHAR(128) NOT NULL,
+    device_name VARCHAR(100) NOT NULL DEFAULT 'Primary Device',
+    platform VARCHAR(50) NOT NULL DEFAULT 'ANDROID',
+    wake_word_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    background_active BOOLEAN NOT NULL DEFAULT TRUE,
+    battery_optimization_ignored BOOLEAN NOT NULL DEFAULT FALSE,
+    push_token VARCHAR(255) NULL,
+    last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_device (user_id, device_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 34. JARVIS Tasks Table
+CREATE TABLE IF NOT EXISTS jarvis_tasks (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    task_type VARCHAR(50) NOT NULL DEFAULT 'REMINDER',
+    schedule_time VARCHAR(100) NULL,
+    cron_expression VARCHAR(100) NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    payload JSON NULL,
+    result JSON NULL,
+    last_run_at TIMESTAMP NULL,
+    next_run_at VARCHAR(100) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_jarvis_tasks (user_id, status),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 35. JARVIS Execution Runs Table
+CREATE TABLE IF NOT EXISTS jarvis_execution_runs (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    task_id VARCHAR(64) NULL,
+    command_text TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'RUNNING',
+    output JSON NULL,
+    duration_ms INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 36. JARVIS Notifications Table
+CREATE TABLE IF NOT EXISTS jarvis_notifications (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
+    action_buttons JSON NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    is_delivered BOOLEAN NOT NULL DEFAULT TRUE,
+    delivered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_notifications (user_id, is_read),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 

@@ -14,6 +14,7 @@ router.use(verifyToken);
 // Interactive JARVIS Agent Chat & Confirmation
 router.post('/chat', AiController.chat);
 router.post('/confirm-action', AiController.confirmAction);
+router.post('/action/verify', AiController.verifyAction);
 router.post('/generate-plan', AiController.generatePlan);
 router.post('/analyze-journal', AiController.analyzeJournal);
 router.post('/save-game-score', AiController.saveGameScore);

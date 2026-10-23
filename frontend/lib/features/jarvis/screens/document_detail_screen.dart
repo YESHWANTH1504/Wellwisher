@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../core/jarvis_colors.dart';
+import '../core/jarvis_typography.dart';
 import '../models/document_models.dart';
 import '../services/document_api_service.dart';
 import '../widgets/document_summary_card.dart';
@@ -6,6 +8,8 @@ import '../widgets/extracted_value_card.dart';
 import '../widgets/document_source_viewer.dart';
 import 'document_comparison_screen.dart';
 
+/// Futuristic JARVIS Document Intelligence Detail Screen.
+/// Provides page-level traceability, extracted numerical biomarkers, and report comparisons.
 class DocumentDetailScreen extends StatefulWidget {
   final String documentId;
   final AiDocumentModel? initialDocument;
@@ -30,7 +34,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   List<dynamic> _pages = [];
   bool _isLoading = true;
   String? _errorMessage;
-  String _activeTab = 'Summary';
 
   @override
   void initState() {
@@ -59,14 +62,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           _summary = results[1] as DocumentSummaryModel?;
           final extData = results[2] as Map<String, dynamic>;
           _extractions = extData['extractions'] as List<AiExtractedValueModel>;
-          _pages = extData['pages'] as List<dynamic>;
+          _pages = extData['pages'] is List ? extData['pages'] as List : [];
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to load details: $e';
+          _errorMessage = 'Failed to load document analysis: $e';
           _isLoading = false;
         });
       }
@@ -77,20 +80,20 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Delete Document & Records?', style: TextStyle(color: Colors.white)),
+        backgroundColor: JarvisColors.surfaceElevated,
+        title: Text('Delete Document & Records?', style: JarvisTypography.titleMedium),
         content: Text(
-          'This will permanently delete "${_document?.originalFilename ?? 'this document'}", all OCR transcripts, extracted metrics, and clinical summaries.',
-          style: const TextStyle(color: Colors.white70),
+          'This will permanently remove "${_document?.originalFilename ?? 'this document'}", all OCR transcripts, extracted metrics, and clinical summaries.',
+          style: JarvisTypography.bodyMedium.copyWith(color: JarvisColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: JarvisColors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete Permanently', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+            child: const Text('Delete Permanently', style: TextStyle(color: JarvisColors.rose, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -100,7 +103,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       final success = await _apiService.deleteDocument(widget.documentId);
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Document and clinical records deleted.')),
+          const SnackBar(
+            content: Text('Document and clinical records deleted.'),
+            backgroundColor: JarvisColors.surfaceElevated,
+          ),
         );
         Navigator.pop(context, true);
       }
@@ -127,150 +133,169 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: JarvisColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        title: Text(
-          _document?.originalFilename ?? 'Document Details',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-          overflow: TextOverflow.ellipsis,
+        backgroundColor: JarvisColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: JarvisColors.cyan, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('DOCUMENT INTELLIGENCE', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+            Text(
+              _document?.originalFilename ?? 'Document Details',
+              style: JarvisTypography.titleMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
+            icon: const Icon(Icons.delete_outline_rounded, color: JarvisColors.rose),
             tooltip: 'Delete Document',
             onPressed: _confirmDelete,
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)))
-          : RefreshIndicator(
-              onRefresh: _loadDocumentDetails,
-              color: const Color(0xFF38BDF8),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Document Meta Badge Bar
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
-                            ),
-                            child: Text(
-                              _document?.displayType ?? 'Document',
-                              style: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _document?.formattedFileSize ?? '',
-                            style: const TextStyle(color: Colors.white38, fontSize: 12),
-                          ),
-                          const Spacer(),
-                          Text(
-                            _document?.processingStatus ?? '',
-                            style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w600, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Grounded Summary Card
-                    if (_summary != null)
-                      DocumentSummaryCard(summary: _summary!),
-
-                    // Extracted Parameters Section
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Row(
-                        children: [
-                          const Text(
-                            'Extracted Clinical Parameters',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white12,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${_extractions.length}',
-                              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    if (_extractions.isEmpty) ...[
-                      Container(
-                        margin: const EdgeInsets.all(16),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'No structured numeric metrics found in this document.',
-                            style: TextStyle(color: Colors.white60),
-                          ),
-                        ),
-                      ),
-                    ] else ...[
-                      ..._extractions.map((m) => ExtractedValueCard(
-                        metric: m,
-                        onTapSource: () => _openSourceViewer(m.pageNumber, m.sourceText),
-                      )),
-                    ],
-
-                    const SizedBox(height: 16),
-
-                    // Compare Reports Action Button
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 44,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DocumentComparisonScreen(
-                                  initialLatestId: widget.documentId,
+          ? const Center(child: CircularProgressIndicator(color: JarvisColors.cyan))
+          : _errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(_errorMessage!, style: JarvisTypography.bodyMedium.copyWith(color: JarvisColors.rose)),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadDocumentDetails,
+                  color: JarvisColors.cyan,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Document Meta Badge Bar
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: JarvisColors.cyan.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: JarvisColors.cyan.withValues(alpha: 0.3)),
+                                ),
+                                child: Text(
+                                  _document?.displayType ?? 'Document',
+                                  style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan, fontWeight: FontWeight.bold),
                                 ),
                               ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF818CF8),
-                            side: const BorderSide(color: Color(0xFF818CF8)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              const SizedBox(width: 8),
+                              Text(
+                                _document?.formattedFileSize ?? '',
+                                style: JarvisTypography.monospace.copyWith(color: JarvisColors.textDisabled, fontSize: 11),
+                              ),
+                              const Spacer(),
+                              Text(
+                                _document?.processingStatus ?? '',
+                                style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.emerald, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
-                          icon: const Icon(Icons.compare_arrows_rounded),
-                          label: const Text('Compare with Previous Report', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                      ),
-                    ),
 
-                    const SizedBox(height: 30),
-                  ],
+                        // Grounded Summary Card
+                        if (_summary != null)
+                          DocumentSummaryCard(summary: _summary!),
+
+                        // Extracted Parameters Section
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Extracted Clinical Parameters',
+                                style: JarvisTypography.titleSmall,
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: JarvisColors.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${_extractions.length}',
+                                  style: JarvisTypography.monospace.copyWith(color: JarvisColors.cyan, fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        if (_extractions.isEmpty) ...[
+                          Container(
+                            margin: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: JarvisColors.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: JarvisColors.border),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'No structured numeric metrics found in this document.',
+                                style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary),
+                              ),
+                            ),
+                          ),
+                        ] else ...[
+                          ..._extractions.map((m) => ExtractedValueCard(
+                                metric: m,
+                                onTapSource: () => _openSourceViewer(m.pageNumber, m.sourceText),
+                              )),
+                        ],
+
+                        const SizedBox(height: 16),
+
+                        // Compare Reports Action Button
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => DocumentComparisonScreen(
+                                      initialLatestId: widget.documentId,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: JarvisColors.indigo,
+                                side: const BorderSide(color: JarvisColors.indigo),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.compare_arrows_rounded),
+                              label: const Text('Compare with Previous Report', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
     );
   }
 }

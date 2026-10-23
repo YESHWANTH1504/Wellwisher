@@ -18,9 +18,12 @@ class _SeniorLoginScreenState extends State<SeniorLoginScreen> {
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   late bool _isSignUp;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   final ApiClient _apiClient = ApiClient();
   final LocalStorageService _storage = LocalStorageService();
 
@@ -37,15 +40,47 @@ class _SeniorLoginScreenState extends State<SeniorLoginScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _identifierController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final identifier = _identifierController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (_isSignUp) {
+      final confirmPassword = _confirmPasswordController.text.trim();
+      if (confirmPassword.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please confirm your password.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (confirmPassword != password) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Passwords do not match.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
 
     setState(() {
       _isLoading = true;
     });
 
-    final identifier = _identifierController.text.trim();
-    final password = _passwordController.text.trim();
     final name = _nameController.text.trim().isNotEmpty
         ? _nameController.text.trim()
         : 'Senior Member';
@@ -236,12 +271,19 @@ class _SeniorLoginScreenState extends State<SeniorLoginScreen> {
                             const SizedBox(height: 18),
                             TextFormField(
                               controller: _passwordController,
-                              obscureText: true,
+                              obscureText: _obscurePassword,
                               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                               decoration: InputDecoration(
                                 labelText: 'Passcode / Password (கடவுச்சொல்)',
                                 labelStyle: const TextStyle(fontSize: 16),
                                 prefixIcon: const Icon(Icons.lock_rounded, color: Colors.purple, size: 28),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                    color: Colors.purple,
+                                  ),
+                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                ),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                               ),
@@ -249,6 +291,38 @@ class _SeniorLoginScreenState extends State<SeniorLoginScreen> {
                                   ? 'Passcode must be at least 4 digits'
                                   : null,
                             ),
+                            if (_isSignUp) ...[
+                              const SizedBox(height: 18),
+                              TextFormField(
+                                controller: _confirmPasswordController,
+                                obscureText: _obscureConfirmPassword,
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                                decoration: InputDecoration(
+                                  labelText: 'Confirm Passcode / Password',
+                                  labelStyle: const TextStyle(fontSize: 16),
+                                  prefixIcon: const Icon(Icons.lock_reset_rounded, color: Colors.purple, size: 28),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                                      color: Colors.purple,
+                                    ),
+                                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                  ),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                ),
+                                validator: (val) {
+                                  if (!_isSignUp) return null;
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Please confirm your password.';
+                                  }
+                                  if (val.trim() != _passwordController.text.trim()) {
+                                    return 'Passwords do not match.';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
                             const SizedBox(height: 24),
 
                             // Large Accessible Sign In Button

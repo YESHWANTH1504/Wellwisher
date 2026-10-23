@@ -1,4 +1,5 @@
 const RoutineModel = require('../models/routineModel');
+const CalendarService = require('../services/jarvis/integrations/calendarService');
 
 class RoutineController {
   static async getSchedule(req, res) {
@@ -8,20 +9,31 @@ class RoutineController {
       }
 
       const dateStr = (req.query.date || '').trim() || new Date().toISOString().split('T')[0];
-      const items = await RoutineModel.getByDate(req.userId, dateStr);
+      const items = await CalendarService.getAgenda(req.userId, dateStr, req.query.timezone || 'UTC');
 
-      const formatted = items.map(item => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        time: item.time,
-        category: item.category,
-        status: item.status,
-        date: item.date,
-        reminderEnabled: Boolean(item.reminder_enabled),
-        createdAt: item.created_at,
-        updatedAt: item.updated_at
-      }));
+      const formatted = items.map(item => {
+        let dateVal = item.date;
+        if (dateVal instanceof Date) {
+          const y = dateVal.getFullYear();
+          const m = String(dateVal.getMonth() + 1).padStart(2, '0');
+          const d = String(dateVal.getDate()).padStart(2, '0');
+          dateVal = `${y}-${m}-${d}`;
+        }
+        return {
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          time: item.formattedTime || item.time,
+          endTime: item.endTime,
+          formattedTime: item.formattedTime,
+          category: item.category,
+          status: item.status,
+          date: dateVal,
+          reminderEnabled: Boolean(item.reminderEnabled ?? item.reminder_enabled),
+          createdAt: item.createdAt || item.created_at,
+          updatedAt: item.updatedAt || item.updated_at
+        };
+      });
 
       return res.json({
         success: true,

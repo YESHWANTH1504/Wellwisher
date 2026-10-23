@@ -5,10 +5,13 @@ import 'services/local_storage_service.dart';
 import 'services/app_service_locator.dart';
 import 'services/notification_service.dart';
 
+import 'core/theme/jarvis_theme_manager.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppServiceLocator().init();
   await NotificationService().init();
+  await JarvisThemeManager().init();
   runApp(const MyApp());
 }
 
@@ -25,6 +28,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final LocalStorageService _storage = LocalStorageService();
+  final JarvisThemeManager _themeManager = JarvisThemeManager();
 
   void updateTheme() {
     setState(() {});
@@ -32,31 +36,33 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final lightTheme = AppTheme.buildTheme(
-      isDark: false,
-      isSeniorMode: _storage.isSeniorMode,
-      colorTheme: _storage.colorTheme,
-    );
+    return AnimatedBuilder(
+      animation: _themeManager,
+      builder: (context, _) {
+        final isDark = _themeManager.isDarkMode;
+        final lightTheme = AppTheme.buildTheme(
+          isDark: false,
+          isSeniorMode: _storage.isSeniorMode,
+          colorTheme: _storage.colorTheme,
+        );
 
-    final darkTheme = AppTheme.buildTheme(
-      isDark: true,
-      isSeniorMode: _storage.isSeniorMode,
-      colorTheme: _storage.colorTheme,
-    );
+        final darkTheme = AppTheme.buildTheme(
+          isDark: true,
+          isSeniorMode: _storage.isSeniorMode,
+          colorTheme: _storage.colorTheme,
+        );
 
-    // If logged in, launch role dashboard, otherwise launch the Portal
-    final initialRoute = _storage.isLoggedIn
-        ? (_storage.isSeniorCitizen ? AppRoutes.seniorDashboard : AppRoutes.workerDashboard)
-        : AppRoutes.portal;
-
-    return MaterialApp(
-      title: 'WellWisher - Daily Routine & Wellness',
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: _storage.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      initialRoute: initialRoute,
-      onGenerateRoute: AppRoutes.generateRoute,
-      debugShowCheckedModeBanner: false,
+        return MaterialApp(
+          navigatorKey: AppRoutes.navigatorKey,
+          title: 'WellWisher - Daily Routine & Wellness',
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+          initialRoute: AppRoutes.portal,
+          onGenerateRoute: AppRoutes.generateRoute,
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }

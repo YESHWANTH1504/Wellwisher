@@ -132,7 +132,12 @@ class VoiceAssistantService {
   };
 
   static String getTranslation(String langCode, String key) {
-    return translations[langCode]?[key] ?? translations['en-US']![key]!;
+    String text = translations[langCode]?[key] ?? translations['en-US']![key]!;
+    final rawName = LocalStorageService().userName?.trim();
+    if (rawName != null && rawName.isNotEmpty) {
+      text = text.replaceAll('Mom', rawName).replaceAll('mom', rawName).replaceAll('Mamá', rawName);
+    }
+    return text;
   }
 
   static Future<void> playGentlePreChime() async {
@@ -140,8 +145,48 @@ class VoiceAssistantService {
     await VoiceAssistantPlatformHelper.playGentlePreChime();
   }
 
-  /// Cleanly strips emojis and variation symbols so TTS engine never speaks "red heart", "droplet", etc.
-  static String stripEmojis(String text) {
+  /// Cleanly strips emojis, markdown formatting, asterisks, and technical symbols
+  /// so TTS engine speaks naturally without pronouncing 'astric' or 'asterisk'.
+  static String sanitizeForSpeech(String text) {
+    if (text.trim().isEmpty) return '';
+
+    var clean = text.trim();
+
+    // 1. Remove Fenced Code Blocks
+    clean = clean.replaceAll(RegExp(r'```[\s\S]*?```'), '');
+
+    // 2. Convert Markdown Links [Label](url) -> Label
+    clean = clean.replaceAllMapped(
+      RegExp(r'\[([^\]]+)\]\([^)]+\)'),
+      (match) => match.group(1) ?? '',
+    );
+
+    // 3. Remove Inline Code Backticks
+    clean = clean.replaceAllMapped(
+      RegExp(r'`([^`]+)`'),
+      (match) => match.group(1) ?? '',
+    );
+    clean = clean.replaceAll('`', '');
+
+    // 4. Remove JSON/Key-Value Objects
+    clean = clean.replaceAll(RegExp(r'\{[^{}]*\}'), '');
+
+    // 5. Convert Bullet Points & Numbered Lists into Natural Spoken Pauses
+    clean = clean.replaceAll(RegExp(r'^[-•*+]\s+', multiLine: true), '');
+    clean = clean.replaceAll(RegExp(r'^\d+\.\s+', multiLine: true), '');
+
+    // 6. Remove Markdown Headers (### Header -> Header)
+    clean = clean.replaceAll(RegExp(r'^[#]{1,6}\s+', multiLine: true), '');
+
+    // 7. Strip Markdown Bold, Italic, Strikethrough (*, **, _, __, ~~)
+    clean = clean.replaceAll(RegExp(r'\*{1,3}'), '');
+    clean = clean.replaceAll(RegExp(r'_{1,3}'), '');
+    clean = clean.replaceAll(RegExp(r'~{1,2}'), '');
+
+    // 8. Remove Technical IDs and Hex Codes
+    clean = clean.replaceAll(RegExp(r'\b(id|ID|uid|act|conf|guid):?\s*[\w\d_-]{8,}\b', caseSensitive: false), '');
+
+    // 9. Clean Emojis and Extended Symbols
     final emojiRegex = RegExp(
       r'[\u{1F600}-\u{1F64F}'
       r'\u{1F300}-\u{1F5FF}'
@@ -158,8 +203,27 @@ class VoiceAssistantService {
       r'\u{1F1E6}-\u{1F1FF}]',
       unicode: true,
     );
-    return text.replaceAll(emojiRegex, '').replaceAll(RegExp(r'\s+'), ' ').trim();
+    clean = clean.replaceAll(emojiRegex, '');
+
+    // 10. Strip Residual Structural Brackets and Bars
+    clean = clean.replaceAll(RegExp(r'[\[\]|]'), '');
+
+    // 11. Convert Newlines to Sentence-Ending Pauses
+    clean = clean.replaceAll(RegExp(r'\r?\n+'), '. ');
+
+    // 12. Absolute Zero Tolerance for Residual Asterisks
+    clean = clean.replaceAll('*', '');
+
+    // 13. Collapse Multiple Whitespace and Fix Punctuation Spacing
+    clean = clean.replaceAll(RegExp(r'\s+([.,?!])'), r'$1');
+    clean = clean.replaceAll(RegExp(r'([.,?!])(?=[A-Za-z])'), r'$1 ');
+    clean = clean.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    return clean;
   }
+
+  /// Backward-compatible alias for sanitizeForSpeech
+  static String stripEmojis(String text) => sanitizeForSpeech(text);
 
   // Cross-Platform Speech Engine (Delegates conditionally to Android/iOS or Web)
   static Future<void> speak(
@@ -272,20 +336,22 @@ class VoiceAssistantService {
         if (upcoming.isNotEmpty) {
           final next = upcoming.first;
           final nextTitle = VoiceNotificationService.getLocalizedVoiceText(next, langCode);
+          final rawName = LocalStorageService().userName?.trim();
+          final name = (rawName != null && rawName.isNotEmpty) ? rawName : 'there';
           if (langCode == 'ta-IN') {
-            reply = 'அம்மா, உங்கள் அடுத்த வேலை நேரம் ஆச்சு: $nextTitle';
+            reply = '$name, உங்கள் அடுத்த வேலை நேரம் ஆச்சு: $nextTitle';
           } else if (langCode == 'hi-IN') {
-            reply = 'माँ, आपके अगले काम का समय हो गया है: $nextTitle';
+            reply = '$name जी, आपके अगले काम का समय हो गया है: $nextTitle';
           } else if (langCode == 'te-IN') {
-            reply = 'అమ్మా, మీ తదుపరి పని సమయం అయింది: $nextTitle';
+            reply = '$name గారూ, మీ తదుపరి పని సమయం అయింది: $nextTitle';
           } else if (langCode == 'kn-IN') {
-            reply = 'ಅಮ್ಮಾ, ನಿಮ್ಮ ಮುಂದಿನ ಕೆಲಸದ ಸಮಯವಾಗಿದೆ: $nextTitle';
+            reply = '$name ಅವರೇ, ನಿಮ್ಮ ಮುಂದಿನ ಕೆಲಸದ ಸಮಯವಾಗಿದೆ: $nextTitle';
           } else if (langCode == 'ml-IN') {
-            reply = 'അമ്മാ, നിങ്ങളുടെ അടുത്ത ജോലിയുടെ സമയമായി: $nextTitle';
+            reply = '$name, നിങ്ങളുടെ അടുത്ത ജോലിയുടെ സമയമായി: $nextTitle';
           } else if (langCode == 'es-ES') {
-            reply = 'Mamá, es hora de su próxima tarea: $nextTitle';
+            reply = '$name, es hora de su próxima tarea: $nextTitle';
           } else {
-            reply = 'Mom, it is time for your next task: $nextTitle';
+            reply = '$name, it is time for your next task: $nextTitle';
           }
         }
       }

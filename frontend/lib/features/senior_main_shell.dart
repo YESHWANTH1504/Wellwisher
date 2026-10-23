@@ -134,6 +134,19 @@ class _SeniorMainShellScreenState extends State<SeniorMainShellScreen> {
         index: _currentIndex,
         children: screens,
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.pushNamed(context, '/jarvis');
+        },
+        backgroundColor: Colors.purple.shade700,
+        foregroundColor: Colors.white,
+        elevation: 6,
+        icon: const Icon(Icons.mic, size: 22),
+        label: const Text(
+          'JARVIS AI',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {

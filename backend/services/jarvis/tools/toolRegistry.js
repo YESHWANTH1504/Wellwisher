@@ -52,15 +52,57 @@ class ToolRegistry {
   /**
    * Get tool definition by name
    */
+  getTool(toolName) {
+    return this.get(toolName);
+  }
+
   get(toolName) {
-    return this._tools.get(toolName) || null;
+    if (!toolName) return null;
+    const direct = this._tools.get(toolName);
+    if (direct) return direct;
+    const norm = String(toolName).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const aliases = {
+      'rescheduleevent': 'calendar_update_event',
+      'cancelevent': 'calendar_delete_event',
+      'settodayagenda': 'calendar_get_today',
+      'settodayschedule': 'calendar_get_today',
+      'todayschedule': 'calendar_get_today',
+      'gettodayschedule': 'calendar_get_today',
+      'createschedule': 'calendar_create_event',
+      'updateschedule': 'calendar_update_event',
+      'deleteschedule': 'calendar_delete_event',
+      'getnews': 'get_current_information',
+      'fetchnews': 'get_current_information',
+      'getsteps': 'health_get_steps_today',
+      'getstepstoday': 'health_get_steps_today',
+      'getheartrate': 'health_get_latest_heart_rate',
+      'getcalories': 'health_get_active_calories_today',
+      'gethealthsummary': 'health_get_daily_summary',
+      'getgoalprogress': 'health_get_goal_progress',
+      'healthgetgoalprogress': 'health_get_goal_progress',
+      'goalprogress': 'health_get_goal_progress',
+      'getbloodpressure': 'health_get_blood_pressure',
+      'getdistance': 'health_get_distance'
+    };
+
+    if (aliases[norm] && this._tools.has(aliases[norm])) {
+      return this._tools.get(aliases[norm]);
+    }
+
+    for (const [name, tool] of this._tools.entries()) {
+      if (name.toLowerCase().replace(/[^a-z0-9]/g, '') === norm) {
+        return tool;
+      }
+    }
+    return null;
   }
 
   /**
    * Check if a tool exists
    */
   has(toolName) {
-    return this._tools.has(toolName);
+    return this.get(toolName) !== null;
   }
 
   /**

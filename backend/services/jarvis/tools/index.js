@@ -9,7 +9,10 @@ const preferenceTools = require('./preferenceTools');
 const familyTools = require('./familyTools');
 const documentTools = require('./documentTools');
 const healthTools = require('./healthTools');
+const deviceTools = require('./deviceTools');
+const { currentInfoTools } = require('./currentInfoTools');
 const { workflowTools } = require('./workflowTools');
+const multimodalTools = require('./multimodalTools');
 
 // Register all system tools into singleton registry
 function initializeToolRegistry(targetRegistry = registry) {
@@ -23,7 +26,10 @@ function initializeToolRegistry(targetRegistry = registry) {
     ...familyTools,
     ...documentTools,
     ...healthTools,
-    ...workflowTools
+    ...deviceTools,
+    ...currentInfoTools,
+    ...workflowTools,
+    ...multimodalTools
   ];
 
   for (const tool of allToolSets) {
@@ -53,5 +59,7 @@ module.exports = {
   familyTools,
   documentTools,
   healthTools,
+  currentInfoTools,
   workflowTools
 };
+

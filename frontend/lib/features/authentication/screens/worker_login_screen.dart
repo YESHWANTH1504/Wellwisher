@@ -17,10 +17,13 @@ class _WorkerLoginScreenState extends State<WorkerLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
 
   late bool _isSignUp;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   final ApiClient _apiClient = ApiClient();
   final LocalStorageService _storage = LocalStorageService();
 
@@ -30,15 +33,47 @@ class _WorkerLoginScreenState extends State<WorkerLoginScreen> {
     _isSignUp = widget.isSignUp;
   }
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (_isSignUp) {
+      final confirmPassword = _confirmPasswordController.text.trim();
+      if (confirmPassword.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please confirm your password.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (confirmPassword != password) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Passwords do not match.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
 
     setState(() {
       _isLoading = true;
     });
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
     final name = _nameController.text.trim().isNotEmpty
         ? _nameController.text.trim()
         : 'Worker Member';
@@ -203,16 +238,52 @@ class _WorkerLoginScreenState extends State<WorkerLoginScreen> {
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: _passwordController,
-                              obscureText: true,
+                              obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 labelText: 'Password',
                                 prefixIcon: const Icon(Icons.lock_outline, color: Colors.teal),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                    color: Colors.teal,
+                                  ),
+                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                ),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                               validator: (val) => (val == null || val.length < 4)
                                   ? 'Password must be at least 4 characters'
                                   : null,
                             ),
+                            if (_isSignUp) ...[
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _confirmPasswordController,
+                                obscureText: _obscureConfirmPassword,
+                                decoration: InputDecoration(
+                                  labelText: 'Confirm Password',
+                                  prefixIcon: const Icon(Icons.lock_reset_rounded, color: Colors.teal),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                                      color: Colors.teal,
+                                    ),
+                                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                  ),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                validator: (val) {
+                                  if (!_isSignUp) return null;
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Please confirm your password.';
+                                  }
+                                  if (val.trim() != _passwordController.text.trim()) {
+                                    return 'Passwords do not match.';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
                             const SizedBox(height: 22),
                             SizedBox(
                               width: double.infinity,

@@ -96,6 +96,14 @@ class AiPreferenceModel {
   final String quietHoursEnd;
   final String notificationFrequency;
   final String preferredResponseStyle;
+  final double speechRate;
+  final bool voiceResponseEnabled;
+  final bool healthAnomalyAlertsEnabled;
+  final bool conflictDetectionEnabled;
+  final String voiceGender; // 'female', 'male', 'systemDefault'
+  final String voicePreset; // 'calm', 'warm', 'professional', 'energetic'
+  final double voicePitch;
+  final String autonomyLevel; // 'LEVEL_0_INFORM', 'LEVEL_1_SUGGEST', 'LEVEL_2_AUTO_EXECUTE', 'LEVEL_3_CONFIRM', 'LEVEL_4_RESTRICTED'
 
   AiPreferenceModel({
     this.assistantName = 'JARVIS',
@@ -111,7 +119,68 @@ class AiPreferenceModel {
     this.quietHoursEnd = '07:00',
     this.notificationFrequency = 'BALANCED',
     this.preferredResponseStyle = 'CONCISE',
+    this.speechRate = 1.0,
+    this.voiceResponseEnabled = true,
+    this.healthAnomalyAlertsEnabled = true,
+    this.conflictDetectionEnabled = true,
+    this.voiceGender = 'female',
+    this.voicePreset = 'warm',
+    this.voicePitch = 1.15,
+    this.autonomyLevel = 'LEVEL_2_AUTO_EXECUTE',
   });
+
+  bool get proactiveEnabled => proactiveAssistanceEnabled;
+  bool get smartRemindersEnabled => proactiveRemindersEnabled;
+
+  AiPreferenceModel copyWith({
+    String? assistantName,
+    bool? voiceEnabled,
+    bool? ttsEnabled,
+    bool? proactiveAssistanceEnabled,
+    bool? proactiveRemindersEnabled,
+    bool? proactiveEnabled,
+    bool? smartRemindersEnabled,
+    bool? dailyBriefingEnabled,
+    bool? eveningSummaryEnabled,
+    bool? proactiveVoiceEnabled,
+    bool? quietHoursEnabled,
+    String? quietHoursStart,
+    String? quietHoursEnd,
+    String? notificationFrequency,
+    String? preferredResponseStyle,
+    double? speechRate,
+    bool? voiceResponseEnabled,
+    bool? healthAnomalyAlertsEnabled,
+    bool? conflictDetectionEnabled,
+    String? voiceGender,
+    String? voicePreset,
+    double? voicePitch,
+    String? autonomyLevel,
+  }) {
+    return AiPreferenceModel(
+      assistantName: assistantName ?? this.assistantName,
+      voiceEnabled: voiceEnabled ?? this.voiceEnabled,
+      ttsEnabled: ttsEnabled ?? this.ttsEnabled,
+      proactiveAssistanceEnabled: proactiveEnabled ?? proactiveAssistanceEnabled ?? this.proactiveAssistanceEnabled,
+      proactiveRemindersEnabled: smartRemindersEnabled ?? proactiveRemindersEnabled ?? this.proactiveRemindersEnabled,
+      dailyBriefingEnabled: dailyBriefingEnabled ?? this.dailyBriefingEnabled,
+      eveningSummaryEnabled: eveningSummaryEnabled ?? this.eveningSummaryEnabled,
+      proactiveVoiceEnabled: proactiveVoiceEnabled ?? this.proactiveVoiceEnabled,
+      quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
+      quietHoursStart: quietHoursStart ?? this.quietHoursStart,
+      quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
+      notificationFrequency: notificationFrequency ?? this.notificationFrequency,
+      preferredResponseStyle: preferredResponseStyle ?? this.preferredResponseStyle,
+      speechRate: speechRate ?? this.speechRate,
+      voiceResponseEnabled: voiceResponseEnabled ?? this.voiceResponseEnabled,
+      healthAnomalyAlertsEnabled: healthAnomalyAlertsEnabled ?? this.healthAnomalyAlertsEnabled,
+      conflictDetectionEnabled: conflictDetectionEnabled ?? this.conflictDetectionEnabled,
+      voiceGender: voiceGender ?? this.voiceGender,
+      voicePreset: voicePreset ?? this.voicePreset,
+      voicePitch: voicePitch ?? this.voicePitch,
+      autonomyLevel: autonomyLevel ?? this.autonomyLevel,
+    );
+  }
 
   factory AiPreferenceModel.fromJson(Map<String, dynamic> json) {
     return AiPreferenceModel(
@@ -128,6 +197,14 @@ class AiPreferenceModel {
       quietHoursEnd: json['quietHoursEnd'] ?? json['quiet_hours_end'] ?? '07:00',
       notificationFrequency: json['notificationFrequency'] ?? json['notification_frequency'] ?? 'BALANCED',
       preferredResponseStyle: json['preferredResponseStyle'] ?? json['preferred_response_style'] ?? 'CONCISE',
+      speechRate: (json['speechRate'] ?? json['speech_rate'] ?? 1.0).toDouble(),
+      voiceResponseEnabled: json['voiceResponseEnabled'] ?? (json['voice_response_enabled'] == 1) ?? true,
+      healthAnomalyAlertsEnabled: json['healthAnomalyAlertsEnabled'] ?? (json['health_anomaly_alerts_enabled'] == 1) ?? true,
+      conflictDetectionEnabled: json['conflictDetectionEnabled'] ?? (json['conflict_detection_enabled'] == 1) ?? true,
+      voiceGender: json['voiceGender'] ?? json['voice_gender'] ?? 'female',
+      voicePreset: json['voicePreset'] ?? json['voice_preset'] ?? 'warm',
+      voicePitch: (json['voicePitch'] ?? json['voice_pitch'] ?? 1.15).toDouble(),
+      autonomyLevel: json['autonomyLevel'] ?? json['autonomy_level'] ?? 'LEVEL_2_AUTO_EXECUTE',
     );
   }
 
@@ -146,6 +223,14 @@ class AiPreferenceModel {
       'quietHoursEnd': quietHoursEnd,
       'notificationFrequency': notificationFrequency,
       'preferredResponseStyle': preferredResponseStyle,
+      'speechRate': speechRate,
+      'voiceResponseEnabled': voiceResponseEnabled,
+      'healthAnomalyAlertsEnabled': healthAnomalyAlertsEnabled,
+      'conflictDetectionEnabled': conflictDetectionEnabled,
+      'voiceGender': voiceGender,
+      'voicePreset': voicePreset,
+      'voicePitch': voicePitch,
+      'autonomyLevel': autonomyLevel,
     };
   }
 }

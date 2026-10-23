@@ -1,0 +1,11 @@
+BUILD IDENTIFIER: PHASE 5.1 DEBUG BUILD
+Timestamp: 2026-09-30T11:23:00+05:30
+Package: com.example.wellwisher
+APK Path: frontend/build/app/outputs/flutter-apk/app-debug.apk
+APK Size: 185557252 bytes
+Min SDK: 26
+Target SDK: 36 (Android 16)
+Architecture: arm64-v8a / multi-abi
+Gradle Plugin: dev.flutter.flutter-gradle-plugin
+Dependencies: androidx.health.connect:connect-client:1.1.0-alpha11, desugar_jdk_libs:2.1.4
+Git Commit: HEAD (Phase 5.1 Hardened)

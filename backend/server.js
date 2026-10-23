@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const pool = require('./config/db');
@@ -14,6 +15,11 @@ const medicationRoutes = require('./routes/medicationRoutes');
 const familyRoutes = require('./routes/familyRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const vitalsRoutes = require('./routes/vitalsRoutes');
+const autonomousRoutes = require('./routes/autonomousRoutes');
+const jarvisVoiceRoutes = require('./routes/jarvisVoiceRoutes');
+const livekitRoutes = require('./routes/livekitRoutes');
+const calendarRoutes = require('./routes/calendarRoutes');
+const jarvisRoutes = require('./routes/jarvisRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,8 +47,13 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     if (!isProd) {
-      // In development, allow localhost, emulator, and local loopbacks
-      if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('10.0.2.2')) {
+      // In development, allow localhost, emulator, local loopbacks, and local network IPs (LAN)
+      if (
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1') ||
+        origin.includes('10.0.2.2') ||
+        /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin)
+      ) {
         return callback(null, true);
       }
     }
@@ -60,9 +71,55 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Parse JSON with reasonable payload limit (prevent memory exhaustion attacks)
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+// Import Middleware
+const { requestCorrelationMiddleware } = require('./middleware/requestCorrelation');
+const { globalErrorBoundary } = require('./middleware/globalErrorBoundary');
+
+// Parse JSON with reasonable payload limit for multimodal inputs (max 25mb)
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
+// Attach Request Correlation ID propagation
+app.use(requestCorrelationMiddleware);
+
+// Liveness Check: verifies node event loop & process is alive
+app.get(['/health/live', '/liveness'], (req, res) => {
+  res.json({
+    status: 'ALIVE',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    requestId: req.requestId
+  });
+});
+
+// Readiness Check: verifies database and core dependencies
+app.get(['/health/ready', '/readiness'], async (req, res) => {
+  try {
+    const isDbConnected = await pool.checkConnection();
+    if (!isDbConnected) {
+      return res.status(503).json({
+        status: 'UNREADY',
+        database: 'DISCONNECTED',
+        timestamp: new Date().toISOString(),
+        requestId: req.requestId
+      });
+    }
+    res.json({
+      status: 'READY',
+      database: 'CONNECTED',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'UNREADY',
+      error: err.message,
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+  }
+});
 
 // Apply General Rate Limiter to all API routes
 app.use('/api', generalLimiter);
@@ -77,6 +134,11 @@ app.use('/api/medications', medicationRoutes);
 app.use('/api/family', familyRoutes);
 app.use('/api/ai', aiLimiter, aiRoutes);
 app.use('/api/vitals', vitalsRoutes);
+app.use('/api/autonomous', autonomousRoutes);
+app.use('/api/jarvis/voice', aiLimiter, jarvisVoiceRoutes);
+app.use('/api/jarvis/calendar', aiLimiter, calendarRoutes);
+app.use('/api/jarvis', aiLimiter, jarvisRoutes);
+app.use('/api/livekit', aiLimiter, livekitRoutes);
 
 // Safe Health Check Endpoint
 app.get('/api/health', async (req, res) => {
@@ -114,25 +176,25 @@ app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Resource not found at ${req.method} ${req.originalUrl}`,
-    error: 'NOT_FOUND'
+    error: 'NOT_FOUND',
+    requestId: req.requestId
   });
 });
 
-// Standardized Global Error Handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled Server Error:', err.message);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(isProd ? {} : { stack: err.stack })
-  });
+// Centralized Global Error Boundary Middleware
+app.use(globalErrorBoundary);
+
+// Unauthenticated Root Health Check
+app.get('/health', (req, res) => {
+  res.redirect(307, '/api/health');
 });
 
 // Start Server if directly executed
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`WellWisher backend server listening on port ${PORT} [Mode: ${process.env.NODE_ENV || 'development'}].`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`WellWisher backend server listening on 0.0.0.0:${PORT} [Mode: ${process.env.NODE_ENV || 'development'}].`);
   });
 }
 
 module.exports = app;
+

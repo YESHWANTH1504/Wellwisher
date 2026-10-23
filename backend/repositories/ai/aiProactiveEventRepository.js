@@ -19,15 +19,29 @@ class AiProactiveEventRepository {
     const relatedEntityType = eventData.relatedEntityType || null;
     const relatedEntityId = eventData.relatedEntityId ? String(eventData.relatedEntityId) : null;
     const scheduledFor = eventData.scheduledFor ? new Date(eventData.scheduledFor) : new Date();
-    const status = eventData.status || 'PENDING';
+    const status = eventData.status || 'CREATED';
+    const dedupKey = eventData.deduplicationKey || (eventData.metadata ? eventData.metadata.deduplicationKey : null);
     const actionPayload = eventData.actionPayload ? JSON.stringify(eventData.actionPayload) : null;
     const metadata = eventData.metadata ? JSON.stringify(eventData.metadata) : null;
     const expiresAt = eventData.expiresAt ? new Date(eventData.expiresAt) : new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+    // 1. Deduplication check: if an event exists with this dedupKey for the user, return existing
+    if (dedupKey) {
+      const [existing] = await pool.query(
+        `SELECT id FROM ai_proactive_events 
+         WHERE user_id = ? AND (deduplication_key = ? OR metadata->>'$.deduplicationKey' = ?) 
+         LIMIT 1`,
+        [userId, dedupKey, dedupKey]
+      );
+      if (existing && existing.length > 0) {
+        return this.getEventById(existing[0].id, userId);
+      }
+    }
+
     await pool.query(
       `INSERT INTO ai_proactive_events 
-       (id, user_id, event_type, priority, title, message, source, related_entity_type, related_entity_id, scheduled_for, status, action_payload, metadata, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, user_id, event_type, priority, title, message, source, related_entity_type, related_entity_id, scheduled_for, status, deduplication_key, action_payload, metadata, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         userId,
@@ -40,6 +54,7 @@ class AiProactiveEventRepository {
         relatedEntityId,
         scheduledFor,
         status,
+        dedupKey,
         actionPayload,
         metadata,
         expiresAt
@@ -64,7 +79,7 @@ class AiProactiveEventRepository {
   /**
    * Get active proactive feed for user
    */
-  static async getActiveFeed(userId, { limit = 20, statuses = ['PENDING', 'DELIVERED'] } = {}) {
+  static async getActiveFeed(userId, { limit = 20, statuses = ['PENDING', 'DELIVERED', 'CREATED', 'ELIGIBLE', 'DEFERRED'] } = {}) {
     const [rows] = await pool.query(
       `SELECT * FROM ai_proactive_events 
        WHERE user_id = ? AND status IN (${statuses.map(() => '?').join(',')})
@@ -76,10 +91,14 @@ class AiProactiveEventRepository {
   }
 
   /**
-   * Update event status (DISMISSED, ACTED, DELIVERED, etc.)
+   * Update event status (DISMISSED, ACTED, DELIVERED, ACKNOWLEDGED, etc.)
    */
   static async updateStatus(eventId, userId, status, extra = {}) {
-    const validStatuses = ['PENDING', 'DELIVERED', 'DISMISSED', 'ACTED', 'EXPIRED', 'CANCELLED'];
+    const validStatuses = [
+      'CREATED', 'ELIGIBLE', 'DEFERRED', 'DELIVERING', 'DELIVERED',
+      'ACKNOWLEDGED', 'EXECUTING', 'VERIFIED', 'FAILED', 'EXPIRED',
+      'CANCELLED', 'PENDING', 'DISMISSED', 'ACTED'
+    ];
     if (!validStatuses.includes(status)) {
       throw new Error(`Invalid proactive event status: "${status}".`);
     }

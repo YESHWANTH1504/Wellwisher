@@ -7,7 +7,6 @@ import 'package:wellwisher/features/jarvis/widgets/document_summary_card.dart';
 import 'package:wellwisher/features/jarvis/widgets/extracted_value_card.dart';
 import 'package:wellwisher/features/jarvis/widgets/document_source_viewer.dart';
 import 'package:wellwisher/features/jarvis/widgets/document_comparison_card.dart';
-import 'package:wellwisher/features/jarvis/screens/document_upload_screen.dart';
 import 'package:wellwisher/features/jarvis/screens/document_list_screen.dart';
 import 'package:wellwisher/features/jarvis/screens/document_detail_screen.dart';
 

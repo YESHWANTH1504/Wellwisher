@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../core/jarvis_colors.dart';
+import '../core/jarvis_typography.dart';
 import '../models/health_intelligence_models.dart';
 import '../services/doctor_briefing_pdf_service.dart';
 
+/// Futuristic 1-Page Clinician Briefing Package screen.
+/// Formats vitals, biomarker trajectories, drug review points, and non-diagnostic disclaimers.
 class DoctorBriefingScreen extends StatelessWidget {
   final DoctorBriefingModel briefing;
 
@@ -21,11 +25,24 @@ class DoctorBriefingScreen extends StatelessWidget {
         'This briefing is generated strictly from personal records for consultation organization. It does not constitute a diagnosis or prescription.';
 
     return Scaffold(
+      backgroundColor: JarvisColors.background,
       appBar: AppBar(
-        title: const Text('Doctor Visit Briefing'),
+        backgroundColor: JarvisColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: JarvisColors.cyan, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('CLINICIAN BRIEFING PACKAGE', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+            Text('Doctor Visit Briefing', style: JarvisTypography.titleMedium),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.print_outlined),
+            icon: const Icon(Icons.print_outlined, color: JarvisColors.cyan),
             tooltip: 'Print / Export PDF',
             onPressed: () => DoctorBriefingPdfService.printOrShareBriefing(briefing),
           ),
@@ -37,41 +54,43 @@ class DoctorBriefingScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Briefing Header Card
-            Card(
-              color: Colors.blueGrey.shade900,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          patientInfo['name'] ?? 'Patient Consultation Summary',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: JarvisColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: JarvisColors.cyan.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        patientInfo['name'] ?? 'Patient Consultation Summary',
+                        style: JarvisTypography.titleMedium,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: JarvisColors.cyan.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: JarvisColors.cyan),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.tealAccent.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'READY FOR VISIT',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.tealAccent),
-                          ),
+                        child: Text(
+                          'READY FOR VISIT',
+                          style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan, fontWeight: FontWeight.bold),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Generated on: ${briefing.generatedAt.split('T')[0]}',
-                      style: const TextStyle(fontSize: 12, color: Colors.white70),
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Generated: ${briefing.generatedAt.split('T')[0]} • Status: Verified',
+                    style: JarvisTypography.monospace.copyWith(color: JarvisColors.textSecondary, fontSize: 11),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -82,17 +101,29 @@ class DoctorBriefingScreen extends StatelessWidget {
               const SizedBox(height: 8),
               ...measurements.map((m) {
                 final map = m is Map ? m : {};
-                return Card(
-                  elevation: 1,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  child: ListTile(
-                    dense: true,
-                    title: Text(map['metricName']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('Date: ${map['date']?.toString().split('T')[0] ?? 'Recent'}'),
-                    trailing: Text(
-                      '${map['latestValue']} ${map['unit']}',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal),
-                    ),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: JarvisColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: JarvisColors.border),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(map['metricName']?.toString() ?? '', style: JarvisTypography.bodyMedium),
+                          Text('Date: ${map['date']?.toString().split('T')[0] ?? 'Recent'}', style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary)),
+                        ],
+                      ),
+                      Text(
+                        '${map['latestValue']} ${map['unit']}',
+                        style: JarvisTypography.monospace.copyWith(color: JarvisColors.cyan, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ],
                   ),
                 );
               }),
@@ -105,21 +136,28 @@ class DoctorBriefingScreen extends StatelessWidget {
               const SizedBox(height: 8),
               ...trends.map((t) {
                 final map = t is Map ? t : {};
-                return Card(
-                  elevation: 1,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  child: ListTile(
-                    dense: true,
-                    title: Text(map['metricName']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('Observation: ${map['dates'] ?? ''}'),
-                    trailing: Text(
-                      'Change: ${map['change']}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: (map['trendDirection'] == 'INCREASING') ? Colors.amber.shade900 : Colors.teal.shade800,
+                final isInc = map['trendDirection'] == 'INCREASING';
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: JarvisColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: JarvisColors.border),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(map['metricName']?.toString() ?? '', style: JarvisTypography.bodyMedium),
+                      Text(
+                        'Delta: ${map['change']}',
+                        style: JarvisTypography.monospace.copyWith(
+                          color: isInc ? JarvisColors.amber : JarvisColors.emerald,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 );
               }),
@@ -133,23 +171,23 @@ class DoctorBriefingScreen extends StatelessWidget {
               ...outOfRange.map((item) {
                 final map = item is Map ? item : {};
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade200),
+                    color: JarvisColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: JarvisColors.amber.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         '${map['fieldName']}: ${map['value']}',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+                        style: JarvisTypography.bodyMedium.copyWith(color: JarvisColors.amber, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Ref: ${map['referenceRange'] ?? 'Printed'}',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                        'Ref: ${map['referenceRange'] ?? 'Printed Range'}',
+                        style: JarvisTypography.monospace.copyWith(color: JarvisColors.textSecondary, fontSize: 11),
                       ),
                     ],
                   ),
@@ -163,25 +201,25 @@ class DoctorBriefingScreen extends StatelessWidget {
               _buildSectionHeader('4. Medications & Discussion Points', Icons.medication_outlined),
               const SizedBox(height: 8),
               if (meds.isNotEmpty) ...[
-                const Text('Active Schedule:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                Text('ACTIVE SCHEDULE:', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
                 const SizedBox(height: 4),
                 ...meds.map((m) {
                   final map = m is Map ? m : {};
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text('• ${map['name']} (${map['dosage']})', style: const TextStyle(fontSize: 13)),
+                    child: Text('• ${map['name']} (${map['dosage']})', style: JarvisTypography.bodySmall),
                   );
                 }),
                 const SizedBox(height: 8),
               ],
               if (discussionPoints.isNotEmpty) ...[
-                const Text('Discussion Points for Clinician:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                Text('DISCUSSION POINTS FOR CLINICIAN:', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.indigo)),
                 const SizedBox(height: 4),
                 ...discussionPoints.map((dp) {
                   final map = dp is Map ? dp : {};
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Text('• [${map['classification']}] ${map['summary']}', style: const TextStyle(fontSize: 12.5, color: Colors.black87)),
+                    child: Text('• [${map['classification']}] ${map['summary']}', style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary)),
                   );
                 }),
               ],
@@ -193,16 +231,14 @@ class DoctorBriefingScreen extends StatelessWidget {
               _buildSectionHeader('5. Questions Prepared for Your Doctor', Icons.help_outline),
               const SizedBox(height: 8),
               ...questions.map((q) => Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
+                      color: JarvisColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: JarvisColors.border),
                     ),
-                    child: Text(
-                      '• $q',
-                      style: const TextStyle(fontSize: 12.5, color: Colors.black87),
-                    ),
+                    child: Text('• $q', style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textPrimary)),
                   )),
               const SizedBox(height: 16),
             ],
@@ -211,27 +247,29 @@ class DoctorBriefingScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blueGrey.shade50,
+                color: JarvisColors.indigo.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.blueGrey.shade200),
+                border: Border.all(color: JarvisColors.indigo.withValues(alpha: 0.2)),
               ),
               child: Text(
                 'NON-DIAGNOSTIC NOTICE: $disclaimer',
-                style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.blueGrey.shade800),
+                style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary, fontStyle: FontStyle.italic, fontSize: 11),
               ),
             ),
             const SizedBox(height: 24),
 
             // Export Action Button
-            ElevatedButton.icon(
-              onPressed: () => DoctorBriefingPdfService.printOrShareBriefing(briefing),
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('Print or Save PDF Briefing'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal.shade700,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () => DoctorBriefingPdfService.printOrShareBriefing(briefing),
+                icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.black),
+                label: const Text('Print or Save PDF Briefing', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: JarvisColors.cyan,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
           ],
@@ -243,12 +281,9 @@ class DoctorBriefingScreen extends StatelessWidget {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Colors.teal.shade800),
+        Icon(icon, size: 18, color: JarvisColors.cyan),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-        ),
+        Text(title, style: JarvisTypography.titleSmall),
       ],
     );
   }

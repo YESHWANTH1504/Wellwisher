@@ -48,7 +48,7 @@ class AuthController {
 
       const userId = await UserModel.create(trimmedName, trimmedEmail, passwordHash);
       const secret = getJwtSecret();
-      const token = jwt.sign({ id: userId, email: trimmedEmail }, secret, { expiresIn: '7d' });
+      const token = jwt.sign({ id: userId, email: trimmedEmail, name: trimmedName }, secret, { expiresIn: '7d' });
 
       return res.status(201).json({
         success: true,
@@ -98,7 +98,7 @@ class AuthController {
       }
 
       const secret = getJwtSecret();
-      const token = jwt.sign({ id: user.id, email: user.email }, secret, { expiresIn: '7d' });
+      const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, secret, { expiresIn: '7d' });
 
       return res.json({
         success: true,

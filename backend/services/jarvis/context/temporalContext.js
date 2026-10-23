@@ -32,6 +32,20 @@ class TemporalContext {
     const currentTime = `${partMap.hour}:${partMap.minute} ${partMap.dayPeriod || (parseInt(partMap.hour, 10) >= 12 ? 'PM' : 'AM')}`;
     const dayOfWeek = partMap.weekday;
 
+    // Calculate dayOfWeekNumber (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const weekdayMap = {
+      'Sunday': 0,
+      'Monday': 1,
+      'Tuesday': 2,
+      'Wednesday': 3,
+      'Thursday': 4,
+      'Friday': 5,
+      'Saturday': 6
+    };
+    const dayOfWeekNumber = weekdayMap[dayOfWeek] !== undefined ? weekdayMap[dayOfWeek] : 0;
+    const isWeekend = dayOfWeekNumber === 0 || dayOfWeekNumber === 6;
+    const isWorkingDay = dayOfWeekNumber >= 1 && dayOfWeekNumber <= 5;
+
     // Calculate hour in 24h
     let hour24 = parseInt(partMap.hour, 10);
     const isPm = (partMap.dayPeriod || '').toUpperCase() === 'PM';
@@ -57,6 +71,9 @@ class TemporalContext {
       currentDate,
       currentTime,
       dayOfWeek,
+      dayOfWeekNumber,
+      isWeekend,
+      isWorkingDay,
       timezone: validTz,
       period,
       periodWindows: {
@@ -73,6 +90,50 @@ class TemporalContext {
         nextWeek: nextWeekDate
       }
     };
+  }
+
+  /**
+   * Resolve target date string from natural language text
+   */
+  static resolveTargetDate(text = '', timezone = 'UTC', baseDate = new Date()) {
+    if (text instanceof Date) {
+      return text.toISOString().split('T')[0];
+    }
+    const ctx = this.resolve(timezone, baseDate);
+    const lower = (typeof text === 'string' ? text : String(text || '')).toLowerCase().trim();
+
+    if (!lower || lower.includes('today') || lower.includes('tonight') || lower.includes('this morning') || lower.includes('this afternoon') || lower.includes('this evening')) {
+      return ctx.currentDate;
+    }
+    if (lower.includes('tomorrow')) {
+      return ctx.resolvedDates.tomorrow;
+    }
+    if (lower.includes('yesterday')) {
+      return ctx.resolvedDates.yesterday;
+    }
+
+    // Direct YYYY-MM-DD
+    const isoMatch = lower.match(/\b\d{4}-\d{2}-\d{2}\b/);
+    if (isoMatch) return isoMatch[0];
+
+    // Day of week handling
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    for (let i = 0; i < days.length; i++) {
+      const dName = days[i];
+      if (lower.includes(dName)) {
+        let diff = (i - ctx.dayOfWeekNumber + 7) % 7;
+        if (diff === 0 && lower.includes('next')) {
+          diff = 7;
+        } else if (diff === 0 && !lower.includes('this')) {
+          // If referring to today's day name without "this", treat as today or upcoming
+          diff = 0;
+        }
+        const targetMs = new Date(`${ctx.currentDate}T12:00:00Z`).getTime() + diff * 24 * 60 * 60 * 1000;
+        return new Date(targetMs).toISOString().split('T')[0];
+      }
+    }
+
+    return ctx.currentDate;
   }
 
   static getValidTimezone(tz) {

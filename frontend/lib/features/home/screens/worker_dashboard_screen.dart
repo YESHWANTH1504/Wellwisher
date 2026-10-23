@@ -699,10 +699,10 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                   Expanded(
                     child: _WorkerActionCard(
                       icon: Icons.auto_awesome_rounded,
-                      title: 'AI Work Coach',
-                      subtitle: 'Plan focus routine',
-                      color: Colors.teal.shade800,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.aiCoach),
+                      title: 'JARVIS Companion',
+                      subtitle: 'Voice & AI planner',
+                      color: const Color(0xFF1E1B4B),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.jarvis),
                     ),
                   ),
                 ],

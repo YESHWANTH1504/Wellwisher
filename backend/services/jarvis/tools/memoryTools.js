@@ -104,22 +104,86 @@ const memoryTools = [
     requiresConfirmation: false,
     inputSchema: {
       type: 'object',
-      required: ['memoryId'],
       properties: {
-        memoryId: { type: 'number', description: 'ID of the memory to delete' }
+        memoryId: { type: 'number', description: 'ID of the memory to delete' },
+        memoryKey: { type: 'string', description: 'Key of the memory to delete' },
+        query: { type: 'string', description: 'Search term to find and delete matching memories' }
       }
     },
     execute: async (context, input) => {
-      const id = parseInt(input.memoryId, 10);
-      const deleted = await AiMemoryRepository.deleteMemory(id, context.userId);
+      let id = input.memoryId ? parseInt(input.memoryId, 10) : null;
+      if (!id && (input.query || input.memoryKey)) {
+        const term = input.query || input.memoryKey;
+        const matches = await AiMemoryRepository.searchMemories(context.userId, term);
+        if (matches && matches.length > 0) {
+          id = matches[0].id;
+        }
+      }
 
-      if (!deleted) {
-        throw new Error(`Memory #${id} not found or not owned by user.`);
+      if (id) {
+        await AiMemoryRepository.deleteMemory(id, context.userId);
+        return {
+          memoryId: id,
+          message: 'I have removed that preference from my memory as requested.'
+        };
       }
 
       return {
-        memoryId: id,
-        message: `Memory #${id} was deleted.`
+        memoryId: null,
+        message: 'No matching memory found to remove.'
+      };
+    }
+  },
+  {
+    name: 'retrieve_memory',
+    description: 'Retrieve stored user memories, preferences, habits, or routines by query.',
+    category: 'memory',
+    permissionKey: 'save_memory',
+    riskLevel: RISK_LEVELS.LOW,
+    requiresConfirmation: false,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Keyword or topic to search in memory' }
+      }
+    },
+    execute: async (context, input) => {
+      const q = input?.query || '';
+      const results = await AiMemoryRepository.searchMemories(context.userId, q);
+      return {
+        query: q,
+        count: results.length,
+        memories: results,
+        message: results.length > 0 ? `Found ${results.length} memories.` : 'No stored memory found.'
+      };
+    }
+  },
+  {
+    name: 'store_memory',
+    description: 'Store a user habit, routine, or preference into memory.',
+    category: 'memory',
+    permissionKey: 'save_memory',
+    riskLevel: RISK_LEVELS.MEDIUM,
+    requiresConfirmation: false,
+    inputSchema: {
+      type: 'object',
+      required: ['memoryValue'],
+      properties: {
+        memoryKey: { type: 'string' },
+        memoryValue: { type: 'string' }
+      }
+    },
+    execute: async (context, input) => {
+      const mem = await AiMemoryRepository.createMemory(context.userId, {
+        memoryType: 'USER_PREFERENCE',
+        memoryKey: input.memoryKey || 'preference',
+        memoryValue: input.memoryValue,
+        source: 'USER_EXPLICIT',
+        importance: 3
+      });
+      return {
+        savedMemory: mem,
+        message: `Saved to memory.`
       };
     }
   }

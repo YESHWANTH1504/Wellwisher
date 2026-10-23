@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../services/local_storage_service.dart';
 import '../../../services/notification_service.dart';
@@ -5,6 +6,8 @@ import '../../../services/senior_caregiver_sync_service.dart';
 import '../../screen_care/controller/screen_care_controller.dart';
 import '../models/schedule_model.dart';
 import '../repositories/schedule_repository.dart';
+import '../events/schedule_event_bus.dart';
+import '../../../core/utils/time_format_helper.dart';
 
 class ScheduleController extends ChangeNotifier {
   final ScheduleRepository repository;
@@ -13,6 +16,7 @@ class ScheduleController extends ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
   List<ScheduleItem> _currentRoutines = [];
   bool _isLoading = false;
+  StreamSubscription<ScheduleChangeEvent>? _eventSubscription;
 
   ScheduleController({
     required this.repository,
@@ -20,6 +24,8 @@ class ScheduleController extends ChangeNotifier {
   }) {
     // Listen to screen care mode changes to dynamically update timelines
     screenCareController.addListener(_onScreenCareChanged);
+    // Invariant: Listen to internal schedule change events for instant reactive synchronization
+    _eventSubscription = ScheduleEventBus().stream.listen(_onScheduleEvent);
     loadRoutines();
   }
 
@@ -31,14 +37,33 @@ class ScheduleController extends ChangeNotifier {
     loadRoutines();
   }
 
+  void _onScheduleEvent(ScheduleChangeEvent event) {
+    // If event affects selected date or is general refresh, authoritatively reconcile
+    if (event.date == null ||
+        (event.date!.year == _selectedDate.year &&
+         event.date!.month == _selectedDate.month &&
+         event.date!.day == _selectedDate.day)) {
+      loadRoutines(forceRefresh: true);
+    }
+  }
+
   // Set active date
   void setSelectedDate(DateTime date) {
     _selectedDate = date;
     loadRoutines();
   }
 
+  // Load schedule convenience alias
+  void loadSchedule({DateTime? selectedDate, bool forceRefresh = true}) {
+    if (selectedDate != null) {
+      _selectedDate = selectedDate;
+    }
+    loadRoutines(forceRefresh: forceRefresh);
+  }
+
+
   // Load routines from Repository & inject Screen Care reminders if enabled
-  Future<void> loadRoutines() async {
+  Future<void> loadRoutines({bool forceRefresh = false}) async {
     _isLoading = true;
     notifyListeners();
 
@@ -46,6 +71,7 @@ class ScheduleController extends ChangeNotifier {
       final repoItems = await repository.getScheduleForDate(
         _selectedDate,
         isSeniorMode: LocalStorageService().isSeniorMode,
+        forceRefresh: forceRefresh,
       );
 
       // Inject Screen Care reminders dynamically if enabled and it's a weekday
@@ -132,7 +158,7 @@ class ScheduleController extends ChangeNotifier {
     }
   }
 
-  // Helper to compare "HH:MM AM/PM" time strings
+  // Helper to compare "HH:MM AM/PM" or "HH:MM" time strings
   int _compareTimeStrings(String t1, String t2) {
     try {
       final p1 = _parseTimeOfDay(t1);
@@ -145,17 +171,11 @@ class ScheduleController extends ChangeNotifier {
   }
 
   TimeOfDay _parseTimeOfDay(String timeStr) {
-    final clean = timeStr.trim();
-    final parts = clean.split(' ');
-    final hm = parts[0].split(':');
-    int hour = int.parse(hm[0]);
-    final int minute = int.parse(hm[1]);
-    final isPm = parts[1].toUpperCase() == 'PM';
-
-    if (isPm && hour < 12) hour += 12;
-    if (!isPm && hour == 12) hour = 0;
-
-    return TimeOfDay(hour: hour, minute: minute);
+    final parsed = TimeFormatHelper.parseToHourMinute(timeStr);
+    if (parsed != null) {
+      return TimeOfDay(hour: parsed.$1, minute: parsed.$2);
+    }
+    return const TimeOfDay(hour: 0, minute: 0);
   }
 
   // Add a new routine
@@ -339,20 +359,16 @@ class ScheduleController extends ChangeNotifier {
 
   String _addMinutesToTimeString(String timeStr, int minutes) {
     try {
-      final tod = _parseTimeOfDay(timeStr);
-      int totalMinutes = tod.hour * 60 + tod.minute + minutes;
-      if (totalMinutes >= 24 * 60) totalMinutes %= (24 * 60);
-      int newHour = totalMinutes ~/ 60;
-      int newMinute = totalMinutes % 60;
-
-      final isPm = newHour >= 12;
-      int displayHour = newHour > 12
-          ? newHour - 12
-          : (newHour == 0 ? 12 : newHour);
-      final padMin = newMinute.toString().padLeft(2, '0');
-      final period = isPm ? 'PM' : 'AM';
-
-      return '$displayHour:$padMin $period';
+      final parsed = TimeFormatHelper.parseToHourMinute(timeStr);
+      if (parsed != null) {
+        int totalMinutes = parsed.$1 * 60 + parsed.$2 + minutes;
+        if (totalMinutes >= 24 * 60) totalMinutes %= (24 * 60);
+        if (totalMinutes < 0) totalMinutes = (totalMinutes % (24 * 60) + 24 * 60) % (24 * 60);
+        final newHour = totalMinutes ~/ 60;
+        final newMinute = totalMinutes % 60;
+        return TimeFormatHelper.formatTo12H((newHour, newMinute));
+      }
+      return timeStr;
     } catch (_) {
       return timeStr;
     }
@@ -373,6 +389,7 @@ class ScheduleController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _eventSubscription?.cancel();
     screenCareController.removeListener(_onScreenCareChanged);
     super.dispose();
   }
