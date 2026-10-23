@@ -7,6 +7,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../features/schedule/models/schedule_model.dart';
 import 'app_service_locator.dart';
 import 'hydration_service.dart';
+import 'jarvis_native_bridge.dart';
 import 'sound_service.dart';
 import 'voice_notification_service.dart';
 
@@ -329,20 +330,24 @@ class NotificationService {
 
   /// Schedule an exact alarm notification that will pop up on the notification bar
   /// even when the app is closed, terminated, or the phone is in idle/sleep mode.
-  Future<void> scheduleRoutineAlarm(ScheduleItem item) async {
+  /// Returns true on successful OS alarm registration (ALARM_SUCCESS), false on failure (ALARM_FAILURE).
+  Future<bool> scheduleRoutineAlarm(ScheduleItem item) async {
     if (!item.reminderEnabled || item.status == ActivityStatus.completed || item.status == ActivityStatus.skipped) {
-      return;
+      return true;
     }
 
     await init();
     final targetDateTime = _parseRoutineTimeToDateTime(item.date, item.time);
-    if (targetDateTime == null) return;
+    if (targetDateTime == null) return false;
 
     final now = DateTime.now();
     final durationUntilTarget = targetDateTime.difference(now);
     if (durationUntilTarget.isNegative || durationUntilTarget.inSeconds < 2) {
-      return; // Already passed or immediate
+      return true; // Already passed or immediate
     }
+
+    // Cancel any previous alarm for this ID before scheduling to guarantee zero duplicate alarms
+    await cancelNotification(item.id);
 
     final int numericId = item.id.hashCode & 0x7FFFFFFF;
     // Accurate duration-offset TZDateTime regardless of device timezone config
@@ -413,19 +418,20 @@ class NotificationService {
       ),
     );
 
-    // Live In-Memory Timer backup for short durations (< 2 minutes)
-    if (durationUntilTarget.inSeconds <= 120) {
-      Timer(durationUntilTarget, () {
-        showSystemNotification(
-          id: numericId,
-          title: item.title,
-          body: item.description.isNotEmpty ? item.description : 'Time for: ${item.title}',
-          payload: item.id,
-          includeActions: item.requiresCompletionStatus,
-        );
-      });
-    }
+    bool nativeScheduled = false;
+    // 1. Register persistent native Android AlarmManager exact alarm
+    try {
+      final res = await JarvisNativeBridge.scheduleReminder(
+        reminderId: item.id,
+        title: item.title,
+        time: item.time,
+        triggerAtMillis: targetDateTime.millisecondsSinceEpoch,
+      );
+      nativeScheduled = res['success'] == true;
+    } catch (_) {}
 
+    // 2. Register Flutter local notification zoned exact alarm
+    bool pluginScheduled = false;
     try {
       await _plugin.zonedSchedule(
         numericId,
@@ -438,7 +444,7 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: item.id,
       );
-
+      pluginScheduled = true;
       if (kDebugMode) {
         print('⏰ [Exact Background Alarm Scheduled]: "${item.title}" in ${durationUntilTarget.inSeconds}s at $tzScheduledDate (ID: $numericId)');
       }
@@ -458,12 +464,19 @@ class NotificationService {
               UILocalNotificationDateInterpretation.absoluteTime,
           payload: item.id,
         );
+        pluginScheduled = true;
       } catch (e2) {
         if (kDebugMode) {
           print('⚠️ Inexact fallback error: $e2');
         }
       }
     }
+
+    final bool success = nativeScheduled || pluginScheduled;
+    if (kDebugMode) {
+      print('[AlarmManagerSync] result for "${item.title}": ${success ? "ALARM_SUCCESS" : "ALARM_FAILURE"} (native: $nativeScheduled, plugin: $pluginScheduled)');
+    }
+    return success;
   }
 
   /// Automatically schedules exact alarms for all upcoming routines in a list
@@ -511,6 +524,13 @@ class NotificationService {
     try {
       await _plugin.cancel(numericId);
     } catch (_) {}
+    try {
+      await JarvisNativeBridge.cancelReminder(id);
+    } catch (_) {}
+  }
+
+  Future<void> cancelRoutineAlarm(String id) async {
+    await cancelNotification(id);
   }
 
   Future<void> cancelAll() async {

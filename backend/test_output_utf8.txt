@@ -1,0 +1,97 @@
+▶ PHASE 10: AUTONOMOUS WORKFLOW & VERIFIED AGENT RUNTIME SUITE
+  ✔ 1. Workflow model instantiates with durable state attributes (1.6886ms)
+  ✔ 2. Workflow step model instantiates with dependency and policy metadata (0.2392ms)
+  ✔ 3. Workflow validator verifies acyclic step dependencies (Valid DAG) (0.424ms)
+  ✔ 4. Workflow validator rejects circular dependencies (Cycle Detection) (0.228ms)
+  ✔ 5. Workflow validator rejects missing dependency references (0.4079ms)
+  ✔ 6. Workflow validator rejects unregistered capabilities (0.2165ms)
+  ✔ 7. Workflow persists completely into MySQL (Workflow + Steps) (10.1341ms)
+  ✔ 8. Workflow restores faithfully from MySQL on engine restart (5.7263ms)
+  ✔ 9. Pattern A: "Open WhatsApp" decomposes into 1-step launch workflow (0.6556ms)
+  ✔ 10. Pattern B: "Find RMK College in Maps and open directions" plans multi-step DAG (0.4469ms)
+  ✔ 11. Pattern C: "Find the address of RMK College and prepare a message to Arun" plans multi-step DAG (0.3579ms)
+  ✔ 12. Pattern D: "Find a restaurant near me, get address, and share it with Arun" plans multi-step share DAG (0.1956ms)
+  ✔ 13. Pattern E: "Create a meeting tomorrow at 10 AM and remind me one hour before" plans calendar+reminder DAG (1.4073ms)
+  ✔ 14. Pattern F: "Move my second meeting to 4 PM and remind me 30 minutes before" binds activeEntity (0.1595ms)
+  ✔ 15. Pattern G: "Open WhatsApp and message Arun that I will be late" includes confirmation requirement (0.1612ms)
+  ✔ 16. Planner rejects arbitrary/unsupported commands and does not hallucinate capabilities (0.1077ms)
+args: [-p, com.google.android.calendar, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "com.google.android.calendar"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="com.google.android.calendar"
+data="android.intent.category.LAUNCHER"
+  ✔ 17. Workflow engine executes single-step capability with observation and verification (1882.3715ms)
+  ✔ 18. Step execution waits for prerequisite dependencies before executing (32.9219ms)
+  ✔ 19. State transfer between steps pipes output of Step 1 into inputs of Step 2 (31.5907ms)
+[CALENDAR_CREATE] userId=9580 eventId=ev_1791269230025_tsj7 title="Executive Sync Phase 10" time=17:00 date=Tue Oct 06 2026 00:00:00 GMT+0530 (India Standard Time) result=SUCCESS
+  ✔ 20. World Model updates after step completion with newly acquired entity data (50.4146ms)
+args: [-p, com.nonexistent.fake.app.neverinstalled, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "com.nonexistent.fake.app.neverinstalled"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="com.nonexistent.fake.app.neverinstalled"
+data="android.intent.category.LAUNCHER"
+  ✔ 21. Verification failure prevents assumed success and marks step as FAILED (1663.4719ms)
+args: [-p, com.google.android.calendar, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "com.google.android.calendar"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="com.google.android.calendar"
+data="android.intent.category.LAUNCHER"
+args: [-p, com.nonexistent.broken.package, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "com.nonexistent.broken.package"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="com.nonexistent.broken.package"
+data="android.intent.category.LAUNCHER"
+  ✖ 22. No False Completion rule: Partially completed workflow reports PARTIALLY_COMPLETED or FAILED (3321.9441ms)
+  ✔ 23. Context-aware explanation: "What are you doing?" explains current step accurately (0.8174ms)
+  ✔ 24. Context-aware explanation: "What's taking so long?" reports precise wait reason (0.1626ms)
+  ✔ 25. Controlled retry respects maxAttempts and applies exponential backoff (56.508ms)
+  ✔ 26. Non-retryable errors (e.g. PERMISSION_DENIED) do NOT retry endlessly (1.0082ms)
+  ✔ 27. Non-retryable error: APP_NOT_INSTALLED halts without retry (0.2155ms)
+  ✔ 28. Recovery Strategy ASK_USER pauses workflow into AWAITING_USER_INPUT state (6.7668ms)
+  ✔ 29. Rollback executes compensation action for supported capabilities (0.4622ms)
+  ✔ 30. Rollback is not assumed for capabilities that declare rollbackSupported = false (0.1117ms)
+  ✔ 31. Recovery Strategy REPLAN recalculates alternate step graph on unresolvable failure (0.1844ms)
+  ✔ 32. Workflow cancellation halts pending steps without executing subsequent side-effects (13.5681ms)
+  ✔ 33. Safety Level 2/3 action pauses in AWAITING_CONFIRMATION before execution (20.7843ms)
+Error: Activity not started, unable to resolve Intent { act=android.intent.action.SEND typ=text/plain flg=0x10000000 xflg=0x4 pkg=confirmed (has extras) }
+  ✔ 34. Conversational continuation "Yes" resumes awaiting workflow from current step (191.211ms)
+  ✔ 35. Conversational input "Use the second one" resolves ambiguity and resumes (19.8529ms)
+  ✖ 36. Conversational continuation "Stop" / "Cancel" cancels in-flight workflow (6.7453ms)
+  ✔ 37. Conversational "Skip that step" skips current step and proceeds to next step in DAG (6.1866ms)
+  ✖ 38. System Orchestrator intercepts "What's taking so long?" and queries active workflow (8.8803ms)
+  ✔ 39. Lock Manager successfully acquires and releases mutual exclusion locks (6.3708ms)
+  ✔ 40. Lock Manager rejects conflicting concurrent mutations on the same resource (11.6542ms)
+  ✔ 41. Multiple concurrent workflows maintain isolated state and independent IDs (0.2666ms)
+  ✔ 42. Strict separation: activeWorkflow does NOT overwrite activeEntity or activeApplication (3.4521ms)
+  ✔ 43. Idempotency key prevents duplicate side-effects on network retry (0.3007ms)
+  ✔ 44. Lock Manager auto-expires stale locks past TTL to prevent permanent deadlock (5.7717ms)
+  ✔ 45. Forged workflowId / cross-user workflow access is strictly blocked (3.5747ms)
+  ✔ 46. Untrusted data containing prompt injection instructions is treated as data, NOT code (0.2597ms)
+  ✔ 47. Safety downgrade attempt during step execution is prevented (0.2469ms)
+  ✔ 48. Arbitrary intent injection is rejected by Capability Registry validation (0.1022ms)
+  ✔ 49. Phase 8 Regression: Multi-turn "second meeting -> move to 4 PM" retains activeEntity lock (4.0318ms)
+args: [-p, com.whatsapp, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "com.whatsapp"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="com.whatsapp"
+data="android.intent.category.LAUNCHER"
+  ✔ 50. Phase 9 Regression: "Open WhatsApp" preserves activeEntity while updating activeApplication (1697.1884ms)
+Warning: Activity not started, its current task has been brought to the front
+  ✔ 51. Full Multi-step Workflow E2E: Map Search -> Resolve -> Navigation -> Completed (1501.8045ms)
+  ✔ 52. Phase 10 Diagnostic Center lists all active, completed, and pending workflows (3.025ms)
+✖ PHASE 10: AUTONOMOUS WORKFLOW & VERIFIED AGENT RUNTIME SUITE (10608.656ms)

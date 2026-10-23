@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/theme/jarvis_theme_manager.dart';
 import '../../../main.dart';
 import '../../../services/local_storage_service.dart';
 import '../../../services/sound_service.dart';
@@ -222,6 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   setState(() {
                     _storage.isDarkMode = val;
                   });
+                  JarvisThemeManager().setDarkMode(val);
                   MyApp.reloadTheme(context);
                 },
               ),
@@ -256,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _ThemeColorChip(name: 'Ocean Blue', colorName: 'blue', color: const Color(0xFF1E88E5), selected: _storage.colorTheme == 'blue', onTap: () => _updateColorTheme('blue')),
+                  _ThemeColorChip(name: 'Ocean Blue', colorName: 'blue', color: const Color(0xFF1565C0), selected: _storage.colorTheme == 'blue', onTap: () => _updateColorTheme('blue')),
                   const SizedBox(width: 8),
                   _ThemeColorChip(name: 'Emerald', colorName: 'green', color: const Color(0xFF2E7D32), selected: _storage.colorTheme == 'green', onTap: () => _updateColorTheme('green')),
                   const SizedBox(width: 8),

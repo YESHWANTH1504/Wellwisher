@@ -7,7 +7,8 @@ const VALID_MEMORY_TYPES = [
   'SCHEDULE_PREFERENCE',
   'ASSISTANT_PREFERENCE',
   'TEMPORARY_CONTEXT',
-  'IMPORTANT_CONTEXT'
+  'IMPORTANT_CONTEXT',
+  'VISUAL_MEMORY'
 ];
 
 const VALID_SOURCES = ['USER_EXPLICIT', 'AGENT_INFERRED', 'SYSTEM_DERIVED'];
@@ -44,6 +45,51 @@ class AiMemoryRepository {
     const conf = Math.min(1.0, Math.max(0.0, parseFloat(confidenceScore) || 1.0));
     const evCount = Math.max(1, parseInt(evidenceCount, 10) || 1);
     const metadataJson = metadata ? JSON.stringify(metadata) : null;
+    const cleanKey = memoryKey.trim();
+    const cleanValue = memoryValue.trim();
+
+    // 1. Deduplication check: check if memory with same key exists for this user
+    const [existingRows] = await pool.query(
+      `SELECT id, memory_value, evidence_count, source FROM ai_memories 
+       WHERE user_id = ? AND (memory_key = ? OR (LOWER(memory_value) = LOWER(?) AND memory_type = ?)) LIMIT 1`,
+      [userId, cleanKey, cleanValue, memoryType]
+    );
+
+    if (existingRows && existingRows.length > 0) {
+      const existing = existingRows[0];
+      const sameVal = existing.memory_value.trim().toLowerCase() === cleanValue.toLowerCase();
+      if (sameVal) {
+        // Exact duplicate: bump evidence count and refresh observation without creating duplicate row
+        await pool.query(
+          `UPDATE ai_memories 
+           SET evidence_count = evidence_count + 1,
+               last_observed_at = NOW(),
+               importance = GREATEST(importance, ?),
+               confidence_score = GREATEST(confidence_score, ?),
+               metadata = COALESCE(?, metadata),
+               updated_at = NOW()
+           WHERE id = ? AND user_id = ?`,
+          [imp, conf, metadataJson, existing.id, userId]
+        );
+        return this.getMemoryById(existing.id, userId);
+      } else {
+        // Value updated under existing preference key: update existing record directly
+        await pool.query(
+          `UPDATE ai_memories 
+           SET memory_value = ?,
+               source = ?,
+               importance = ?,
+               confidence_score = ?,
+               evidence_count = evidence_count + 1,
+               last_observed_at = NOW(),
+               metadata = ?,
+               updated_at = NOW()
+           WHERE id = ? AND user_id = ?`,
+          [cleanValue, source, imp, conf, metadataJson, existing.id, userId]
+        );
+        return this.getMemoryById(existing.id, userId);
+      }
+    }
 
     const [result] = await pool.query(
       `INSERT INTO ai_memories 
@@ -52,8 +98,8 @@ class AiMemoryRepository {
       [
         userId,
         memoryType,
-        memoryKey.trim(),
-        memoryValue.trim(),
+        cleanKey,
+        cleanValue,
         source,
         imp,
         conf,
@@ -69,8 +115,8 @@ class AiMemoryRepository {
       id: result.insertId,
       userId,
       memoryType,
-      memoryKey: memoryKey.trim(),
-      memoryValue: memoryValue.trim(),
+      memoryKey: cleanKey,
+      memoryValue: cleanValue,
       source,
       importance: imp,
       confidenceScore: conf,

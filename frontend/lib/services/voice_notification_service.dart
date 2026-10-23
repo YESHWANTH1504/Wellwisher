@@ -561,102 +561,102 @@ class VoiceNotificationService {
         (lower.contains('water') || lower.contains('warm') || lower.contains('glass') || lower.contains('hydration'))) {
       switch (langCode) {
         case 'ta-IN':
-          return 'ஒரு டம்ளர் வெதுவெதுப்பான தண்ணீருடன் 1 மாத்திரை சாப்பிடுங்கம்மா';
+          return 'ஒரு டம்ளர் வெதுவெதுப்பான தண்ணீருடன் 1 மாத்திரை சாப்பிடுங்கள்';
         case 'hi-IN':
-          return 'एक गिलास गुनगुने पानी के साथ 1 बीपी की गोली ले लीजिए माँ';
+          return 'एक गिलास गुनगुने पानी के साथ 1 बीपी की गोली ले लीजिए';
         case 'te-IN':
-          return 'ఒక గ్లాసు గోరువెచ్చని నీళ్ళతో 1 బిపి మాత్ర తీసుకోండి అమ్మా';
+          return 'ఒక గ్లాసు గోరువెచ్చని నీళ్ళతో 1 బిపి మాత్ర తీసుకోండి';
         case 'kn-IN':
-          return 'ಒಂದು ಗ್ಲಾಸ್ ಉಗುರುಬಿಸಿ ನೀರಿನೊಂದಿಗೆ 1 ಬಿಪಿ ಮಾತ್ರೆ ತಗೊಳ್ಳಿ ಅಮ್ಮಾ';
+          return 'ಒಂದು ಗ್ಲಾಸ್ ಉಗುರುಬಿಸಿ ನೀರಿನೊಂದಿಗೆ 1 ಬಿಪಿ ಮಾತ್ರೆ ತಗೊಳ್ಳಿ';
         case 'ml-IN':
-          return 'ഒരു ഗ്ലാസ് ചെറുചൂടുള്ള വെള്ളത്തോടൊപ്പം 1 ബിപി ഗുളിക കഴിക്കൂ അമ്മാ';
+          return 'ഒരു ഗ്ലാസ് ചെറുചൂടുള്ള വെള്ളത്തോടൊപ്പം 1 ബിപി ഗുളിക കഴിക്കൂ';
         case 'es-ES':
-          return 'Tome 1 pastilla con un vaso de agua tibia, Mamá';
+          return 'Tome 1 pastilla con un vaso de agua tibia';
         default:
-          return 'Take 1 pill with a warm glass of water, Mom';
+          return 'Take 1 pill with a warm glass of water';
       }
     }
 
     if (lower.contains('stretching')) {
       switch (langCode) {
         case 'ta-IN':
-          return 'கொஞ்சம் உடற்பயிற்சி செய்து தண்ணீர் குடியுங்கம்மா';
+          return 'கொஞ்சம் உடற்பயிற்சி செய்து தண்ணீர் குடியுங்கள்';
         case 'hi-IN':
-          return 'हल्का व्यायाम करें और पानी पीजिए माँ';
+          return 'हल्का व्यायाम करें और पानी पीजिए';
         case 'te-IN':
-          return 'కొద్దిగా కొలతలు చేసి మంచి నీళ్ళు తాగండి అమ్మా';
+          return 'కొద్దిగా కొలతలు చేసి మంచి నీళ్ళు తాగండి';
         case 'kn-IN':
-          return 'ಸ್ವಲ್ಪ ಕಸರತ್ತು ಮಾಡಿ ನೀರು ಕುಡಿಯಿರಿ ಅಮ್ಮಾ';
+          return 'ಸ್ವಲ್ಪ ಕಸರತ್ತು ಮಾಡಿ ನೀರು ಕುಡಿಯಿರಿ';
         case 'ml-IN':
-          return 'ചെറിയ വ്യായാമം ചെയ്ത് വെള്ളം കുടിക്കൂ അമ്മാ';
+          return 'ചെറിയ വ്യായാമം ചെയ്ത് വെള്ളം കുടിക്കൂ';
         case 'es-ES':
-          return 'Estiramientos ligeros y agua, Mamá';
+          return 'Estiramientos ligeros y agua';
         default:
-          return 'Light stretching and hydration, Mom';
+          return 'Light stretching and hydration';
       }
     }
 
     if (lower.contains('breakfast')) {
       switch (langCode) {
         case 'ta-IN':
-          return 'ஆரோக்கியமான காலை உணவு மற்றும் மாத்திரை சாப்பிடுங்கம்மா';
+          return 'ஆரோக்கியமான காலை உணவு மற்றும் மாத்திரை சாப்பிடுங்கள்';
         case 'hi-IN':
-          return 'पौष्टिक नाश्ता करें और अपनी दवाई ले लीजिए माँ';
+          return 'पौष्टिक नाश्ता करें और अपनी दवाई ले लीजिए';
         case 'te-IN':
-          return 'ఆరోగ్యకరమైన టిఫిన్ చేసి మందులు వేసుకోండి అమ్మా';
+          return 'ఆరోగ్యకరమైన టిఫిన్ చేసి మందులు వేసుకోండి';
         case 'kn-IN':
-          return 'ಆರೋಗ್ಯಕರ ಉಪಾಹಾರ ಮತ್ತು ಮಾತ್ರೆ ತಗೊಳ್ಳಿ ಅಮ್ಮಾ';
+          return 'ಆರೋಗ್ಯಕರ ಉಪಾಹಾರ ಮತ್ತು ಮಾತ್ರೆ ತಗೊಳ್ಳಿ';
         case 'ml-IN':
-          return 'ആരോഗ്യകരമായ ഭക്ഷണവും മരുന്നും കഴിക്കൂ അമ്മാ';
+          return 'ആരോഗ്യകരമായ ഭക്ഷണവും മരുന്നും കഴിക്കൂ';
         case 'es-ES':
-          return 'Desayuno saludable y pastillas, Mamá';
+          return 'Desayuno saludable y pastillas';
         default:
-          return 'Healthy breakfast and pills, Mom';
+          return 'Healthy breakfast and pills';
       }
     }
 
     if (lower.contains('pill') || lower.contains('medicine') || lower.contains('medication')) {
       switch (langCode) {
         case 'ta-IN':
-          return 'மருந்து மாத்திரையை மறக்காம சாப்பிடுங்கம்மா';
+          return 'மருந்து மாத்திரையை மறக்காம சாப்பிடுங்கள்';
         case 'hi-IN':
-          return 'समय पर अपनी दवाई ले लीजिए माँ';
+          return 'समय पर अपनी दवाई ले लीजिए';
         case 'te-IN':
-          return 'సమయానికి మందులు వేసుకోండి అమ్మా';
+          return 'సమయానికి మందులు వేసుకోండి';
         case 'kn-IN':
-          return 'ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ಮಾತ್ರೆ ತಗೊಳ್ಳಿ ಅಮ್ಮಾ';
+          return 'ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ಮಾತ್ರೆ ತಗೊಳ್ಳಿ';
         case 'ml-IN':
-          return 'സമയത്ത് മരുന്ന് കഴിക്കൂ അമ്മാ';
+          return 'സമയത്ത് മരുന്ന് കഴിക്കൂ';
         case 'es-ES':
-          return 'Tome sus medicinas a tiempo, Mamá';
+          return 'Tome sus medicinas a tiempo';
         default:
-          return 'Please take your medicine on time, Mom';
+          return 'Please take your medicine on time';
       }
     }
 
     if (lower.contains('water') || lower.contains('hydration') || lower.contains('glass')) {
       switch (langCode) {
         case 'ta-IN':
-          return 'ஒரு டம்ளர் புது தண்ணீர் குடியுங்கம்மா';
+          return 'ஒரு டம்ளர் புது தண்ணீர் குடியுங்கள்';
         case 'hi-IN':
-          return 'एक गिलास ताजा पानी पी लीजिए माँ';
+          return 'एक गिलास ताजा पानी पी लीजिए';
         case 'te-IN':
-          return 'ఒక గ్లాసు మంచి నీళ్ళు తాగండి అమ్మా';
+          return 'ఒక గ్లాసు మంచి నీళ్ళు తాగండి';
         case 'kn-IN':
-          return 'ಒಂದು ಗ್ಲಾಸ್ ನೀರು ಕುಡಿಯಿರಿ ಅಮ್ಮಾ';
+          return 'ಒಂದು ಗ್ಲಾಸ್ ನೀರು ಕುಡಿಯಿರಿ';
         case 'ml-IN':
-          return 'ഒരു ഗ്ലാസ് വെള്ളം കുടിക്കൂ അമ്മാ';
+          return 'ഒരു ഗ്ലാസ് വെള്ളം കുടിക്കൂ';
         case 'es-ES':
-          return 'Tome un vaso de agua fresca, Mamá';
+          return 'Tome un vaso de agua fresca';
         default:
-          return 'Drink a fresh glass of water, Mom';
+          return 'Drink a fresh glass of water';
       }
     }
 
     return rawDesc;
   }
 
-  // Generate warm, caring multi-lingual voice notification prompt for seniors
+  // Generate warm, caring multi-lingual voice notification prompt for user
   static String getLocalizedVoiceText(ScheduleItem item, String langCode) {
     // Strip emojis from title and description before building the spoken text
     final emojiRegex = RegExp(
@@ -670,21 +670,24 @@ class VoiceNotificationService {
     final title = _getLocalizedTitle(rawTitle, langCode);
     final desc = _getLocalizedDesc(rawDesc, langCode);
 
+    final rawName = LocalStorageService().userName?.trim();
+    final name = (rawName != null && rawName.isNotEmpty) ? rawName : 'there';
+
     switch (langCode) {
       case 'ta-IN':
-        return 'அம்மா! இப்போது $title நேரம் ஆச்சுமா. $desc. மறக்காம செய்யுங்கம்மா.';
+        return '$name! இப்போது $title நேரம் ஆச்சு. $desc. மறக்காம செய்யுங்க.';
       case 'hi-IN':
-        return 'माँ! अभी $title का समय हो गया है माँ। $desc। समय पर कर लीजिए माँ।';
+        return '$name जी! अभी $title का समय हो गया है। $desc। समय पर कर लीजिए।';
       case 'te-IN':
-        return 'అమ్మా! ఇప్పుడు $title సమయం అయింది అమ్మా. $desc. జాగ్రత్తగా తీసుకోండి అమ్మా.';
+        return '$name గారూ! ఇప్పుడు $title సమయం అయింది. $desc. జాగ్రత్తగా తీసుకోండి.';
       case 'kn-IN':
-        return 'ಅಮ್ಮಾ! ಈಗ $title ಸಮಯವಾಗಿದೆ ಅಮ್ಮಾ. $desc. ಜಾಗ್ರತೆಯಾಗಿರಿ ಅಮ್ಮಾ.';
+        return '$name ಅವರೇ! ಈಗ $title ಸಮಯವಾಗಿದೆ. $desc. ಜಾಗ್ರತೆಯಾಗಿರಿ.';
       case 'ml-IN':
-        return 'അമ്മാ! ഇപ്പോൾ $title സമയമായി അമ്മാ. $desc. ശ്രദ്ധിക്കണേ അമ്മാ.';
+        return '$name! ഇപ്പോൾ $title സമയമായി. $desc. ശ്രദ്ധിക്കണേ.';
       case 'es-ES':
-        return 'Hola Mama! Es hora de $title, Mama. $desc. Cuidese mucho, Mama!';
+        return 'Hola $name! Es hora de $title. $desc. Cuidese mucho!';
       default:
-        return 'Hi Mom! It\'s time for $title, Mom. $desc. Please take care of yourself, Mom!';
+        return 'Hi $name! It\'s time for $title. $desc. Please take care of yourself!';
     }
   }
 }

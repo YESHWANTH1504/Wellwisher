@@ -4,6 +4,21 @@ backend/.env
 backend/uploads/*
 !backend/uploads/.gitkeep
 
+# Environment & Secrets
+.env
+.env.*
+backend/.env
+backend/.env.*
+
+# Temporary, Scratch & Device Test Dumps
+/scratch/
+/lib/
+/screen*.png
+/ui*.xml
+/prefs.xml
+/login.json
+/msg.json
+
 # Flutter & Dart
 frontend/.dart_tool/
 frontend/.flutter-plugins
@@ -19,3 +34,4 @@ frontend/ios/.symlinks/
 .DS_Store
 *.zip
 Thumbs.db
+

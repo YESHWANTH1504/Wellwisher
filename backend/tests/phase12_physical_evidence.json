@@ -1,0 +1,187 @@
+{
+  "suite": "Phase 12 On-Device & Offline Intelligence Fabric Physical Validation",
+  "deviceId": "bdbf8c9b",
+  "timestamp": "2026-10-06T10:33:34.741Z",
+  "results": [
+    {
+      "testId": 1,
+      "title": "Online Baseline Discovery",
+      "passed": true,
+      "evidence": "Initial composite state: ONLINE, Local models available: 3"
+    },
+    {
+      "testId": 2,
+      "title": "Physical WiFi Disabling",
+      "passed": true,
+      "evidence": "WiFi disable command executed. Status: Wi-Fi is disabled"
+    },
+    {
+      "testId": 3,
+      "title": "Physical Mobile Data Disable & Airplane Mode Enable",
+      "passed": true,
+      "evidence": "svc data disable: OK; airplane-mode enable: OK"
+    },
+    {
+      "testId": 4,
+      "title": "Network Intelligence Offline Verification",
+      "passed": true,
+      "evidence": "Network state transitioned to: OFFLINE"
+    },
+    {
+      "testId": 5,
+      "title": "Local Time Offline Determination",
+      "passed": true,
+      "evidence": "Deterministic intent: DEVICE_TIME, Hardware clock: 16:03:35"
+    },
+    {
+      "testId": 6,
+      "title": "Local Schedule Query Offline",
+      "passed": true,
+      "evidence": "Schedule retrieved offline: \"Physical Hardware Review\" at Lab 3"
+    },
+    {
+      "testId": 7,
+      "title": "Create Reminder Offline",
+      "passed": true,
+      "evidence": "Reminder created in World Model with id=rem_phys_1791282815906, title=\"drink water\""
+    },
+    {
+      "testId": 8,
+      "title": "Modify Reminder Offline",
+      "passed": true,
+      "evidence": "Reminder modified offline to 19:00:00"
+    },
+    {
+      "testId": 9,
+      "title": "Cancel Reminder Offline",
+      "passed": false,
+      "evidence": "Reminder deleted offline cleanly"
+    },
+    {
+      "testId": 10,
+      "title": "Multi-Turn Entity Resolution Offline",
+      "passed": true,
+      "evidence": "Active entity locked offline: \"Physical System Architecture\""
+    },
+    {
+      "testId": 11,
+      "title": "Physical WhatsApp Launch Offline",
+      "passed": true,
+      "evidence": "WhatsApp launch output: bash arg: -p\r\n  bash arg: com.whatsapp\r\n  bash arg: -c\r\n  bash arg: android.inte, Current focus: mCurrentFocus=Window{bd0addd u0 com.whatsapp/com.whatsapp.home.ui.HomeActivity}"
+    },
+    {
+      "testId": 12,
+      "title": "Physical Device Telemetry Acquisition",
+      "passed": true,
+      "evidence": "Realme physical battery: 100%, charging: true"
+    },
+    {
+      "testId": 13,
+      "title": "Local Native TTS Synthesis",
+      "passed": true,
+      "evidence": "Local Android TTS synthesised speech: engine=LOCAL_ANDROID_TTS"
+    },
+    {
+      "testId": 14,
+      "title": "Local STT Honest Discovery",
+      "passed": true,
+      "evidence": "Local speech recognition available: false. Non-fabrication policy respected."
+    },
+    {
+      "testId": 15,
+      "title": "Offline Memory Persistence",
+      "passed": true,
+      "evidence": "Stored memory offline: \"Level B2 slot 44\""
+    },
+    {
+      "testId": 16,
+      "title": "Offline World Model Persistence",
+      "passed": true,
+      "evidence": "World model entity upserted: Realme RMX3840 Physical (Android 16)"
+    },
+    {
+      "testId": 17,
+      "title": "Offline DAG Workflow Execution",
+      "passed": true,
+      "evidence": "Workflow wf_offline_p12_1791282817052 completed offline with status=COMPLETED"
+    },
+    {
+      "testId": 18,
+      "title": "Offline Proactive Suggestion Generation",
+      "passed": true,
+      "evidence": "Generated 1 proactive candidates offline"
+    },
+    {
+      "testId": 19,
+      "title": "Application Re-initialization Offline",
+      "passed": true,
+      "evidence": "Restored conversation state session offline: session_restart_1791282818200"
+    },
+    {
+      "testId": 20,
+      "title": "Process Death & MySQL Durability Verification",
+      "passed": true,
+      "evidence": "Data survived simulated process restart: \"Level B2 slot 44\""
+    },
+    {
+      "testId": 21,
+      "title": "Physical Network Restoration",
+      "passed": true,
+      "evidence": "Airplane mode disabled, WiFi and Mobile Data re-enabled physically"
+    },
+    {
+      "testId": 22,
+      "title": "Offline Queue Network Synchronization",
+      "passed": true,
+      "evidence": "Synchronized 2 queued items upon network return"
+    },
+    {
+      "testId": 23,
+      "title": "Cloud Provider Failure Dynamic Failover",
+      "passed": true,
+      "evidence": "Cloud failure correctly triggered executionMode=DEGRADED"
+    },
+    {
+      "testId": 24,
+      "title": "Backend Unreachability Evaluation",
+      "passed": true,
+      "evidence": "Backend failure evaluated cleanly: reachable=false"
+    },
+    {
+      "testId": 25,
+      "title": "Privacy Router Local-Only Constraint",
+      "passed": true,
+      "evidence": "Sensitive password query forced to: LOCAL (privacyClass=LOCAL_ONLY)"
+    },
+    {
+      "testId": 26,
+      "title": "Battery-Aware Resource Policy Gating",
+      "passed": true,
+      "evidence": "Battery 10% discharging: permitted=false, reason=Low battery (<15%) while discharging prevents intensive on-device inference."
+    },
+    {
+      "testId": 27,
+      "title": "Thermal-Aware Resource Policy Gating",
+      "passed": true,
+      "evidence": "Thermal SEVERE: permitted=false, reason=Device thermal state (SEVERE) prohibits high-compute local inference."
+    },
+    {
+      "testId": 28,
+      "title": "Idempotency Duplicate Prevention",
+      "passed": true,
+      "evidence": "Duplicate enqueue with identical idempotencyKey returned existing item id=q_1791282818686_b4a8ru"
+    },
+    {
+      "testId": 29,
+      "title": "Queue Integrity & Safety Invariant",
+      "passed": true,
+      "evidence": "Destructive action rejected by offline queue safety policy"
+    },
+    {
+      "testId": 30,
+      "title": "Absolute Non-Fabrication: Offline Weather",
+      "passed": true,
+      "evidence": "Offline weather response: \"I need an internet connection to check current weather. Local features remain available.\" (Zero fabrication)"
+    }
+  ]
+}

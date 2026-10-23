@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
+import '../../../services/local_storage_service.dart';
 import '../models/jarvis_models.dart';
 import '../services/jarvis_api_service.dart';
 import '../services/voice_input_service.dart';
 import '../services/jarvis_tts_service.dart';
+import '../../schedule/events/schedule_event_bus.dart';
+import '../../../services/app_service_locator.dart';
 
 class JarvisController extends ChangeNotifier {
   final JarvisApiService _apiService;
@@ -11,6 +14,42 @@ class JarvisController extends ChangeNotifier {
 
   JarvisOrbState _orbState = JarvisOrbState.idle;
   JarvisOrbState get orbState => _orbState;
+  JarvisState get currentState => _orbState;
+
+  bool get isListening => _orbState == JarvisState.listening;
+  bool get isSpeaking => _ttsService.isSpeaking || _orbState == JarvisState.speaking;
+  bool get isThinking => _orbState == JarvisState.thinking || _orbState == JarvisState.retrieving;
+  bool get isAlwaysOnVoiceRunning => true;
+
+  JarvisVoiceGender get currentVoiceGender => (_ttsService is JarvisTtsService)
+      ? _ttsService.gender
+      : (LocalStorageService().selectedVoiceGender == 'male' ? JarvisVoiceGender.male : JarvisVoiceGender.female);
+
+  void switchVoice(JarvisVoiceGender gender) {
+    _ttsService.setGender(gender);
+    notifyListeners();
+  }
+
+  Future<void> interruptSpeech() async {
+    await _ttsService.stop();
+    setOrbState(JarvisState.idle, 'Ready');
+  }
+
+  void _addInitialGreeting() {
+    final userName = LocalStorageService().userName?.trim();
+    final greeting = (userName != null && userName.isNotEmpty)
+        ? 'Good day, $userName! I am your personal assistant. How can I help you today?'
+        : 'Good day! I am your personal assistant. How can I help you today?';
+
+    _messages.add(
+      JarvisMessage(
+        id: 'msg_welcome',
+        sender: 'jarvis',
+        text: greeting,
+        timestamp: DateTime.now(),
+      ),
+    );
+  }
 
   final List<JarvisMessage> _messages = [];
   List<JarvisMessage> get messages => List.unmodifiable(_messages);
@@ -44,15 +83,13 @@ class JarvisController extends ChangeNotifier {
     _addInitialGreeting();
   }
 
-  void _addInitialGreeting() {
-    _messages.add(
-      JarvisMessage(
-        id: 'msg_welcome',
-        sender: 'jarvis',
-        text: 'Good day! I am JARVIS, your intelligent wellness and schedule companion. Tap the microphone or type below to command me.',
-        timestamp: DateTime.now(),
-      ),
-    );
+  bool _isDisposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
   }
 
   void toggleVoice(bool enabled) {
@@ -76,6 +113,24 @@ class JarvisController extends ChangeNotifier {
       await _ttsService.stop();
     }
 
+    // Detect Voice Switch Command
+    final lower = trimmed.toLowerCase();
+    if (lower.contains('switch to male voice') ||
+        lower.contains('change to male voice') ||
+        lower.contains('use a male voice') ||
+        lower.contains('switch voice to male') ||
+        lower.contains('set voice to male') ||
+        lower == 'male voice') {
+      _ttsService.setGender(JarvisVoiceGender.male);
+    } else if (lower.contains('switch to female voice') ||
+        lower.contains('change to female voice') ||
+        lower.contains('use a female voice') ||
+        lower.contains('switch voice to female') ||
+        lower.contains('set voice to female') ||
+        lower == 'female voice') {
+      _ttsService.setGender(JarvisVoiceGender.female);
+    }
+
     // Add user turn to UI
     final userMsgId = 'user_${DateTime.now().millisecondsSinceEpoch}';
     _messages.add(
@@ -97,6 +152,14 @@ class JarvisController extends ChangeNotifier {
         conversationId: _conversationId,
       );
 
+      if (response.intent == 'VOICE_SWITCH' || response.action?.type == 'VOICE_SWITCH') {
+        if (response.message.toLowerCase().contains('male')) {
+          _ttsService.setGender(JarvisVoiceGender.male);
+        } else if (response.message.toLowerCase().contains('female')) {
+          _ttsService.setGender(JarvisVoiceGender.female);
+        }
+      }
+
       if (response.conversationId != null) {
         _conversationId = response.conversationId;
       }
@@ -112,6 +175,7 @@ class JarvisController extends ChangeNotifier {
             text: response.message,
             responseType: response.type,
             confirmation: response.confirmation,
+            executionSteps: response.executionSteps,
             timestamp: response.timestamp,
           ),
         );
@@ -130,12 +194,20 @@ class JarvisController extends ChangeNotifier {
             text: response.message,
             responseType: response.type,
             action: response.action,
+            executionSteps: response.executionSteps,
             timestamp: response.timestamp,
           ),
         );
 
         // Notify parent screens to refresh schedule or wellness
         onStateInvalidationRequired?.call();
+        ScheduleEventBus().publishMutation(
+          action: ScheduleActionType.refresh,
+          source: ScheduleChangeSource.voice,
+        );
+        try {
+          AppServiceLocator.instance.scheduleController.loadRoutines(forceRefresh: true);
+        } catch (_) {}
 
         setOrbState(JarvisOrbState.idle, 'Action complete.');
         if (_isVoiceEnabled) {
@@ -154,6 +226,7 @@ class JarvisController extends ChangeNotifier {
             sender: 'jarvis',
             text: response.message,
             responseType: response.type,
+            executionSteps: response.executionSteps,
             timestamp: response.timestamp,
           ),
         );
@@ -170,6 +243,7 @@ class JarvisController extends ChangeNotifier {
             sender: 'jarvis',
             text: response.message,
             responseType: response.type,
+            executionSteps: response.executionSteps,
             timestamp: response.timestamp,
           ),
         );
@@ -215,11 +289,19 @@ class JarvisController extends ChangeNotifier {
           text: response.message,
           responseType: response.type,
           action: response.action,
+          executionSteps: response.executionSteps,
           timestamp: response.timestamp,
         ),
       );
 
       onStateInvalidationRequired?.call();
+      ScheduleEventBus().publishMutation(
+        action: ScheduleActionType.refresh,
+        source: ScheduleChangeSource.voice,
+      );
+      try {
+        AppServiceLocator.instance.scheduleController.loadRoutines(forceRefresh: true);
+      } catch (_) {}
       setOrbState(JarvisOrbState.idle, 'Action verified & completed.');
 
       if (_isVoiceEnabled) {
@@ -285,6 +367,7 @@ class JarvisController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _voiceService.cancelListening();
     _ttsService.stop();
     super.dispose();

@@ -1,0 +1,515 @@
+TAP version 13
+# Subtest: PHASE 11: ANTICIPATORY EXECUTION & PROACTIVE INTELLIGENCE SUITE
+    # Subtest: 1. Confidence Engine calculates multi-factor score with recurrence weight
+    ok 1 - 1. Confidence Engine calculates multi-factor score with recurrence weight
+      ---
+      duration_ms: 1.6391
+      type: 'test'
+      ...
+    # Subtest: 2. Confidence Engine applies recency decay for stale patterns
+    ok 2 - 2. Confidence Engine applies recency decay for stale patterns
+      ---
+      duration_ms: 0.1951
+      type: 'test'
+      ...
+    # Subtest: 3. Confidence Engine assigns correct bands (VERY_HIGH, HIGH, MODERATE, LOW)
+    not ok 3 - 3. Confidence Engine assigns correct bands (VERY_HIGH, HIGH, MODERATE, LOW)
+      ---
+      duration_ms: 0.9149
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:82:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + 'HIGH'
+        - 'VERY_HIGH'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'VERY_HIGH'
+      actual: 'HIGH'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:84:12)
+        Test.runInAsyncScope (node:async_hooks:227:14)
+        Test.run (node:internal/test_runner/test:1325:25)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 4. Confidence Engine incorporates historical feedback adjustments
+    ok 4 - 4. Confidence Engine incorporates historical feedback adjustments
+      ---
+      duration_ms: 0.1413
+      type: 'test'
+      ...
+    # Subtest: 5. Active intensive workflow applies an interruption penalty to confidence
+    ok 5 - 5. Active intensive workflow applies an interruption penalty to confidence
+      ---
+      duration_ms: 0.1228
+      type: 'test'
+      ...
+    # Subtest: 6. Behavior patterns persist into MySQL and track recurrence
+    not ok 6 - 6. Behavior patterns persist into MySQL and track recurrence
+      ---
+      duration_ms: 7.1073
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:115:3'
+      failureType: 'testCodeFailure'
+      error: "Unknown column 'trigger_event' in 'field list'"
+      code: 'ER_BAD_FIELD_ERROR'
+      stack: |-
+        Object.query (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\config\db.js:1838:29)
+        JarvisAnticipationEngine.recordBehaviorPattern (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\services\jarvis\anticipation\JarvisAnticipationEngine.js:152:16)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:116:16)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 7. Behavior pattern confidence increases with recurrence
+    not ok 7 - 7. Behavior pattern confidence increases with recurrence
+      ---
+      duration_ms: 4.6148
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:137:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        The expression evaluated to a falsy value:
+        
+          assert.ok(rows.length > 0)
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: true
+      actual: false
+      operator: '=='
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:142:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 8. Meeting preparation engine generates briefing candidate 15 mins before meeting
+    ok 8 - 8. Meeting preparation engine generates briefing candidate 15 mins before meeting
+      ---
+      duration_ms: 0.5674
+      type: 'test'
+      ...
+    # Subtest: 9. Travel anticipation triggers 30-45 mins before event with physical location
+    ok 9 - 9. Travel anticipation triggers 30-45 mins before event with physical location
+      ---
+      duration_ms: 0.2012
+      type: 'test'
+      ...
+    # Subtest: 10. Meeting without physical location does not trigger travel anticipation
+    ok 10 - 10. Meeting without physical location does not trigger travel anticipation
+      ---
+      duration_ms: 0.2132
+      type: 'test'
+      ...
+    # Subtest: 11. Context change detector detects low battery threshold drop
+    not ok 11 - 11. Context change detector detects low battery threshold drop
+      ---
+      duration_ms: 0.1561
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:193:3'
+      failureType: 'testCodeFailure'
+      error: 'detector.detectDeviceStateChange is not a function'
+      code: 'ERR_TEST_FAILURE'
+      name: 'TypeError'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:195:28)
+        Test.runInAsyncScope (node:async_hooks:227:14)
+        Test.run (node:internal/test_runner/test:1325:25)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 12. Low battery does not trigger when device is actively charging
+    not ok 12 - 12. Low battery does not trigger when device is actively charging
+      ---
+      duration_ms: 0.087
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:201:3'
+      failureType: 'testCodeFailure'
+      error: 'detector.detectDeviceStateChange is not a function'
+      code: 'ERR_TEST_FAILURE'
+      name: 'TypeError'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:203:28)
+        Test.runInAsyncScope (node:async_hooks:227:14)
+        Test.run (node:internal/test_runner/test:1325:25)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 13. Quiet hours correctly detects standard night window (22:00 to 07:00)
+    ok 13 - 13. Quiet hours correctly detects standard night window (22:00 to 07:00)
+      ---
+      duration_ms: 0.154
+      type: 'test'
+      ...
+    # Subtest: 14. Fatigue manager blocks delivery during quiet hours
+    ok 14 - 14. Fatigue manager blocks delivery during quiet hours
+      ---
+      duration_ms: 0.2044
+      type: 'test'
+      ...
+    # Subtest: 15. Critical/Urgent priority bypasses quiet hours
+    ok 15 - 15. Critical/Urgent priority bypasses quiet hours
+      ---
+      duration_ms: 0.0774
+      type: 'test'
+      ...
+    # Subtest: 16. Fatigue manager suppresses delivery when user is speaking
+    ok 16 - 16. Fatigue manager suppresses delivery when user is speaking
+      ---
+      duration_ms: 0.0668
+      type: 'test'
+      ...
+    # Subtest: 17. Deduplication cooldown blocks identical key within 30 minutes
+    ok 17 - 17. Deduplication cooldown blocks identical key within 30 minutes
+      ---
+      duration_ms: 5.3584
+      type: 'test'
+      ...
+    # Subtest: 18. Proactive Mode OFF forces Decision Level A (OBSERVE)
+    ok 18 - 18. Proactive Mode OFF forces Decision Level A (OBSERVE)
+      ---
+      duration_ms: 0.3029
+      type: 'test'
+      ...
+    # Subtest: 19. Proactive Mode ASSISTED restricts to Decision Level B (SUGGEST)
+    ok 19 - 19. Proactive Mode ASSISTED restricts to Decision Level B (SUGGEST)
+      ---
+      duration_ms: 0.0847
+      type: 'test'
+      ...
+    # Subtest: 20. Proactive Mode BALANCED stages context as Level C (PREPARE)
+    ok 20 - 20. Proactive Mode BALANCED stages context as Level C (PREPARE)
+      ---
+      duration_ms: 0.0664
+      type: 'test'
+      ...
+    # Subtest: 21. Proactive Mode BALANCED requires Level D (ASK) before executing side-effects
+    ok 21 - 21. Proactive Mode BALANCED requires Level D (ASK) before executing side-effects
+      ---
+      duration_ms: 0.0627
+      type: 'test'
+      ...
+    # Subtest: 22. Proactive Mode PROACTIVE permits Level E (EXECUTE) for reversible low-risk authorized action
+    ok 22 - 22. Proactive Mode PROACTIVE permits Level E (EXECUTE) for reversible low-risk authorized action
+      ---
+      duration_ms: 0.0781
+      type: 'test'
+      ...
+    # Subtest: 23. Absolute Prohibition: External communication (SMS/WhatsApp) cannot execute autonomously
+    ok 23 - 23. Absolute Prohibition: External communication (SMS/WhatsApp) cannot execute autonomously
+      ---
+      duration_ms: 0.1004
+      type: 'test'
+      ...
+    # Subtest: 24. Absolute Prohibition: Phone calls cannot execute autonomously
+    ok 24 - 24. Absolute Prohibition: Phone calls cannot execute autonomously
+      ---
+      duration_ms: 0.1501
+      type: 'test'
+      ...
+    # Subtest: 25. Absolute Prohibition: Deletion operations cannot execute autonomously
+    ok 25 - 25. Absolute Prohibition: Deletion operations cannot execute autonomously
+      ---
+      duration_ms: 0.0629
+      type: 'test'
+      ...
+    # Subtest: 26. Absolute Prohibition: Financial transactions cannot execute autonomously
+    ok 26 - 26. Absolute Prohibition: Financial transactions cannot execute autonomously
+      ---
+      duration_ms: 0.0538
+      type: 'test'
+      ...
+    # Subtest: 27. Safety Level 2/3 actions forced to confirmation regardless of confidence
+    ok 27 - 27. Safety Level 2/3 actions forced to confirmation regardless of confidence
+      ---
+      duration_ms: 0.0548
+      type: 'test'
+      ...
+    # Subtest: 28. Non-reversible action falls back to ASK even with high confidence
+    ok 28 - 28. Non-reversible action falls back to ASK even with high confidence
+      ---
+      duration_ms: 0.057
+      type: 'test'
+      ...
+    # Subtest: 29. Unauthorized category falls back to ASK in PROACTIVE mode
+    ok 29 - 29. Unauthorized category falls back to ASK in PROACTIVE mode
+      ---
+      duration_ms: 0.058
+      type: 'test'
+      ...
+    # Subtest: 30. Level C (PREPARE) stages workflow into READY state without executing
+    not ok 30 - 30. Level C (PREPARE) stages workflow into READY state without executing
+      ---
+      duration_ms: 1.7845
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:409:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        false !== true
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: true
+      actual: false
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:419:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 31. Level D (ASK) stages workflow into AWAITING_CONFIRMATION state
+    not ok 31 - 31. Level D (ASK) stages workflow into AWAITING_CONFIRMATION state
+      ---
+      duration_ms: 0.2861
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:430:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        false !== true
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: true
+      actual: false
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:441:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 32. Level E (EXECUTE) passes directly into Phase 10 Workflow Engine
+    not ok 32 - 32. Level E (EXECUTE) passes directly into Phase 10 Workflow Engine
+      ---
+      duration_ms: 0.2054
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:449:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        false !== true
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: true
+      actual: false
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:462:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 33. Proactive workflow validator rejects invalid DAG proposal
+    ok 33 - 33. Proactive workflow validator rejects invalid DAG proposal
+      ---
+      duration_ms: 0.1324
+      type: 'test'
+      ...
+    # Subtest: 34. Full Context Evaluation evaluates battery and creates proactive prediction & suggestion
+    not ok 34 - 34. Full Context Evaluation evaluates battery and creates proactive prediction & suggestion
+      ---
+      duration_ms: 12.8538
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:487:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        The expression evaluated to a falsy value:
+        
+          assert.ok(batt.suggestionId > 0)
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: true
+      actual: false
+      operator: '=='
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:498:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 35. Context Evaluation logs proactive event into MySQL
+    ok 35 - 35. Context Evaluation logs proactive event into MySQL
+      ---
+      duration_ms: 1.2162
+      type: 'test'
+      ...
+    # Subtest: 36. Proactive suggestions feed retrieves latest pending suggestions
+    ok 36 - 36. Proactive suggestions feed retrieves latest pending suggestions
+      ---
+      duration_ms: 0.9516
+      type: 'test'
+      ...
+    # Subtest: 37. "Why did you suggest this?" returns transparent evidence and confidence score
+    ok 37 - 37. "Why did you suggest this?" returns transparent evidence and confidence score
+      ---
+      duration_ms: 2.1083
+      type: 'test'
+      ...
+    # Subtest: 38. System Orchestrator answers "Why did you suggest this?" accurately
+    ok 38 - 38. System Orchestrator answers "Why did you suggest this?" accurately
+      ---
+      duration_ms: 4.1229
+      type: 'test'
+      ...
+    # Subtest: 39. Non-existent suggestion returns helpful explanation fallback
+    ok 39 - 39. Non-existent suggestion returns helpful explanation fallback
+      ---
+      duration_ms: 0.8172
+      type: 'test'
+      ...
+    # Subtest: 40. "Turn off proactive suggestions" switches user mode to OFF
+    not ok 40 - 40. "Turn off proactive suggestions" switches user mode to OFF
+      ---
+      duration_ms: 1.621
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:553:3'
+      failureType: 'testCodeFailure'
+      error: "Unknown column 'max_suggestions_per_day' in 'field list'"
+      code: 'ER_BAD_FIELD_ERROR'
+      stack: |-
+        Object.query (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\config\db.js:1838:29)
+        JarvisAnticipationEngine.setUserPreferences (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\services\jarvis\anticipation\JarvisAnticipationEngine.js:98:16)
+        JarvisSystemOrchestrator.orchestrate (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\services\jarvis\os\JarvisSystemOrchestrator.js:268:39)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:554:17)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 41. When mode is OFF, context evaluation produces zero delivered suggestions
+    ok 41 - 41. When mode is OFF, context evaluation produces zero delivered suggestions
+      ---
+      duration_ms: 3.5073
+      type: 'test'
+      ...
+    # Subtest: 42. "Set proactive mode to PROACTIVE" restores autonomous mode
+    not ok 42 - 42. "Set proactive mode to PROACTIVE" restores autonomous mode
+      ---
+      duration_ms: 0.8741
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:574:3'
+      failureType: 'testCodeFailure'
+      error: "Unknown column 'max_suggestions_per_day' in 'field list'"
+      code: 'ER_BAD_FIELD_ERROR'
+      stack: |-
+        Object.query (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\config\db.js:1838:29)
+        JarvisAnticipationEngine.setUserPreferences (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\services\jarvis\anticipation\JarvisAnticipationEngine.js:98:16)
+        JarvisSystemOrchestrator.orchestrate (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\services\jarvis\os\JarvisSystemOrchestrator.js:287:39)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:575:17)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 43. Feedback ACCEPTED updates suggestion status and rewards behavior pattern
+    not ok 43 - 43. Feedback ACCEPTED updates suggestion status and rewards behavior pattern
+      ---
+      duration_ms: 6.5953
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:587:3'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - 'ACCEPTED'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'ACCEPTED'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:598:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 44. Feedback REJECTED penalizes behavior pattern confidence
+    not ok 44 - 44. Feedback REJECTED penalizes behavior pattern confidence
+      ---
+      duration_ms: 1.2004
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:601:3'
+      failureType: 'testCodeFailure'
+      error: "Unknown column 'trigger_event' in 'field list'"
+      code: 'ER_BAD_FIELD_ERROR'
+      stack: |-
+        Object.query (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\config\db.js:1838:29)
+        JarvisAnticipationEngine.recordBehaviorPattern (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\services\jarvis\anticipation\JarvisAnticipationEngine.js:152:16)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase11AnticipatoryExecution.test.js:603:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:911:7)
+      ...
+    # Subtest: 45. Morning briefing generates factual summary without hallucinations
+    ok 45 - 45. Morning briefing generates factual summary without hallucinations
+      ---
+      duration_ms: 2.2388
+      type: 'test'
+      ...
+    # Subtest: 46. Evening recap generates factual summary with tracked routine count
+    ok 46 - 46. Evening recap generates factual summary with tracked routine count
+      ---
+      duration_ms: 1.3902
+      type: 'test'
+      ...
+    # Subtest: 47. User Data Isolation: User 2 cannot view or access User 1 proactive suggestions
+    ok 47 - 47. User Data Isolation: User 2 cannot view or access User 1 proactive suggestions
+      ---
+      duration_ms: 1.6065
+      type: 'test'
+      ...
+    # Subtest: 48. User Data Isolation: User 2 cannot mutate User 1 proactive feedback
+    ok 48 - 48. User Data Isolation: User 2 cannot mutate User 1 proactive feedback
+      ---
+      duration_ms: 0.948
+      type: 'test'
+      ...
+    # Subtest: 49. Prompt Injection Defense: Malicious title with prompt injection treated strictly as data
+    ok 49 - 49. Prompt Injection Defense: Malicious title with prompt injection treated strictly as data
+      ---
+      duration_ms: 0.4045
+      type: 'test'
+      ...
+    # Subtest: 50. Deterministic deduplication key generation is consistent and unique
+    ok 50 - 50. Deterministic deduplication key generation is consistent and unique
+      ---
+      duration_ms: 0.1237
+      type: 'test'
+      ...
+    # Subtest: 51. Scheduler detects duplicate proactive candidate in MySQL within 12h
+    ok 51 - 51. Scheduler detects duplicate proactive candidate in MySQL within 12h
+      ---
+      duration_ms: 4.9684
+      type: 'test'
+      ...
+    # Subtest: 52. Local-first anticipation operates with zero external cloud LLM dependencies
+    ok 52 - 52. Local-first anticipation operates with zero external cloud LLM dependencies
+      ---
+      duration_ms: 1.2085
+      type: 'test'
+      ...
+    1..52
+not ok 1 - PHASE 11: ANTICIPATORY EXECUTION & PROACTIVE INTELLIGENCE SUITE
+  ---
+  duration_ms: 106.6351
+  type: 'suite'
+  location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase11AnticipatoryExecution.test.js:43:1'
+  failureType: 'subtestsFailed'
+  error: '13 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...

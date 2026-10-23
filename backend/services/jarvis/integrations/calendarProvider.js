@@ -355,7 +355,192 @@ class MockCalendarProvider extends CalendarProvider {
   }
 }
 
-const defaultMockCalendarProvider = new MockCalendarProvider();
+/**
+ * Authoritative MySQL Calendar Provider for Project JARVIS (Phase 5.1 Hardened)
+ * Directly binds to authoritative MySQL routines table, eliminating mock and in-memory calendar stores.
+ */
+class MySQLCalendarProvider extends CalendarProvider {
+  constructor() {
+    super();
+    this.RoutineModel = require('../../../models/routineModel');
+  }
+
+  async listEvents(userId, { startDate, endDate, date } = {}) {
+    if (!userId) return [];
+    let rows = [];
+    if (date) {
+      rows = await this.RoutineModel.getByDate(userId, date);
+    } else if (startDate && endDate) {
+      rows = await this.RoutineModel.getByDateRange(userId, startDate, endDate);
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      rows = await this.RoutineModel.getByDate(userId, today);
+    }
+    return (rows || []).map(r => new CalendarEvent({
+      id: r.id,
+      userId: r.user_id,
+      title: r.title,
+      startTime: r.time,
+      endTime: r.end_time || r.time,
+      date: r.date,
+      location: r.description || '',
+      description: r.description || '',
+      provider: 'MYSQL_ROUTINES',
+      status: r.status || 'CONFIRMED'
+    }));
+  }
+
+  async getEvent(userId, eventId) {
+    if (!userId || !eventId) return null;
+    const r = await this.RoutineModel.getById(eventId, userId);
+    if (!r) return null;
+    return new CalendarEvent({
+      id: r.id,
+      userId: r.user_id,
+      title: r.title,
+      startTime: r.time,
+      endTime: r.end_time || r.time,
+      date: r.date,
+      location: r.description || '',
+      description: r.description || '',
+      provider: 'MYSQL_ROUTINES',
+      status: r.status || 'CONFIRMED'
+    });
+  }
+
+  async createEvent(userId, eventData = {}) {
+    const today = new Date().toISOString().split('T')[0];
+    const created = await this.RoutineModel.create({
+      id: eventData.id,
+      userId,
+      title: eventData.title || 'Untitled Event',
+      time: eventData.startTime || eventData.time || '10:00 AM',
+      endTime: eventData.endTime || null,
+      date: eventData.date || today,
+      description: eventData.description || eventData.location || '',
+      category: 'calendar',
+      eventType: 'event',
+      source: 'jarvis_workflow'
+    });
+    return {
+      success: true,
+      event: new CalendarEvent({
+        id: created.id,
+        userId,
+        title: created.title,
+        startTime: created.time,
+        endTime: created.end_time || created.time,
+        date: created.date,
+        location: created.description,
+        provider: 'MYSQL_ROUTINES'
+      })
+    };
+  }
+
+  async updateEvent(userId, eventId, eventData = {}) {
+    const updated = await this.RoutineModel.update(eventId, userId, {
+      title: eventData.title,
+      time: eventData.startTime || eventData.time,
+      endTime: eventData.endTime,
+      date: eventData.date,
+      description: eventData.description || eventData.location
+    });
+    if (!updated) return { success: false, error: 'Event not found or update failed' };
+    return {
+      success: true,
+      event: new CalendarEvent({
+        id: updated.id,
+        userId,
+        title: updated.title,
+        startTime: updated.time,
+        endTime: updated.end_time || updated.time,
+        date: updated.date,
+        location: updated.description,
+        provider: 'MYSQL_ROUTINES'
+      })
+    };
+  }
+
+  async deleteEvent(userId, eventId) {
+    const deleted = await this.RoutineModel.delete(eventId, userId);
+    return { success: Boolean(deleted) };
+  }
+
+  async findAvailability(userId, { date, durationMinutes = 30 } = {}) {
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const events = await this.listEvents(userId, { date: targetDate });
+
+    const dayStart = 9 * 60;
+    const dayEnd = 17 * 60;
+    const busyIntervals = events.map(e => ({
+      start: this._timeToMinutes(e.startTime),
+      end: this._timeToMinutes(e.endTime)
+    })).sort((a, b) => a.start - b.start);
+
+    const availableSlots = [];
+    let currentCursor = dayStart;
+
+    for (const interval of busyIntervals) {
+      if (interval.start - currentCursor >= durationMinutes) {
+        availableSlots.push(new CalendarAvailability({
+          date: targetDate,
+          startTime: this._minutesToTime(currentCursor),
+          endTime: this._minutesToTime(interval.start),
+          durationMinutes: interval.start - currentCursor
+        }));
+      }
+      currentCursor = Math.max(currentCursor, interval.end);
+    }
+
+    if (dayEnd - currentCursor >= durationMinutes) {
+      availableSlots.push(new CalendarAvailability({
+        date: targetDate,
+        startTime: this._minutesToTime(currentCursor),
+        endTime: this._minutesToTime(dayEnd),
+        durationMinutes: dayEnd - currentCursor
+      }));
+    }
+
+    return availableSlots;
+  }
+
+  _timeToMinutes(timeStr) {
+    if (!timeStr) return 9 * 60;
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!match) return 9 * 60;
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const p = match[3]?.toUpperCase();
+    if (p === 'PM' && h < 12) h += 12;
+    if (p === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  }
+
+  _minutesToTime(mins) {
+    let hours = Math.floor(mins / 60);
+    const minutes = mins % 60;
+    const period = hours >= 12 ? 'PM' : 'AM';
+    if (hours > 12) hours -= 12;
+    if (hours === 0) hours = 12;
+    const hStr = hours < 10 ? `0${hours}` : `${hours}`;
+    const mStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
+    return `${hStr}:${mStr} ${period}`;
+  }
+
+  async clearAll(userId) {
+    if (userId) {
+      try {
+        const pool = require('../../../config/db');
+        await pool.query('DELETE FROM routines WHERE user_id = ?', [userId]);
+      } catch (err) {
+        // safe ignore for testing
+      }
+    }
+  }
+}
+
+const authoritativeCalendarProvider = new MySQLCalendarProvider();
+const defaultMockCalendarProvider = authoritativeCalendarProvider; // Backward compatibility alias
 
 module.exports = {
   CalendarEvent,
@@ -366,5 +551,7 @@ module.exports = {
   OutlookCalendarProvider,
   DeviceCalendarProvider,
   MockCalendarProvider,
+  MySQLCalendarProvider,
+  authoritativeCalendarProvider,
   defaultMockCalendarProvider
 };

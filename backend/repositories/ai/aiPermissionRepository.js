@@ -7,6 +7,7 @@ const DEFAULT_ACTION_PERMISSIONS = {
   create_schedule: 'AUTO_APPROVE',
   update_schedule: 'AUTO_APPROVE',
   delete_schedule: 'ASK_ALWAYS',
+  cancel_event: 'AUTO_APPROVE',
   create_reminder: 'AUTO_APPROVE',
   update_reminder: 'AUTO_APPROVE',
   delete_reminder: 'ASK_ALWAYS',
@@ -44,7 +45,28 @@ const DEFAULT_ACTION_PERMISSIONS = {
   update_appointment_reminder: 'ASK_ALWAYS',
   create_followup_routine: 'ASK_ALWAYS',
   record_appointment_completion: 'ASK_ALWAYS',
-  export_appointment_briefing: 'ASK_ALWAYS'
+  export_appointment_briefing: 'ASK_ALWAYS',
+  open_app: 'AUTO_APPROVE',
+  open_application: 'AUTO_APPROVE',
+  open_settings: 'AUTO_APPROVE',
+  set_device_alarm: 'AUTO_APPROVE',
+  get_device_state: 'AUTO_APPROVE',
+  get_current_information: 'AUTO_APPROVE',
+  get_weather: 'AUTO_APPROVE',
+  health_read_steps: 'AUTO_APPROVE',
+  health_read_heart_rate: 'AUTO_APPROVE',
+  health_read_resting_heart_rate: 'AUTO_APPROVE',
+  health_read_calories: 'AUTO_APPROVE',
+  health_read_sleep: 'AUTO_APPROVE',
+  health_read_exercise: 'AUTO_APPROVE',
+  health_read_workouts: 'AUTO_APPROVE',
+  health_read_weight: 'AUTO_APPROVE',
+  health_read_blood_pressure: 'AUTO_APPROVE',
+  health_read_distance: 'AUTO_APPROVE',
+  health_read_all: 'AUTO_APPROVE',
+  health_read_summary: 'AUTO_APPROVE',
+  make_phone_call: 'ASK_ALWAYS',
+  send_sms: 'ASK_ALWAYS'
 };
 
 class AiPermissionRepository {

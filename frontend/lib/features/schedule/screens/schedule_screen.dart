@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/time_format_helper.dart';
 import '../../../services/local_storage_service.dart';
 import '../../../services/sound_service.dart';
 import '../../../services/voice_notification_service.dart';
@@ -150,6 +151,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           },
         ),
         IconButton(
+          icon: const Icon(Icons.access_time_rounded, color: Colors.cyanAccent, size: 22),
+          tooltip: 'Time Format: ${_storage.timeFormat}',
+          onPressed: _showTimeFormatDialog,
+        ),
+        IconButton(
           icon: Icon(Icons.notifications_active_rounded, color: primaryThemeColor, size: 24),
           tooltip: 'Live Test Status Bar Pop-Up Notification',
           onPressed: () {
@@ -158,6 +164,59 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
         const SizedBox(width: 8),
       ],
+    );
+  }
+
+  void _showTimeFormatDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        String selected = _storage.timeFormat;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0F172A),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Time format', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<String>(
+                    title: const Text('12-hour', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('8:30 PM', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    value: '12h',
+                    groupValue: selected,
+                    activeColor: AppColors.primary,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setModalState(() => selected = val);
+                        _storage.timeFormat = val;
+                        setState(() {});
+                        Navigator.pop(ctx);
+                      }
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('24-hour', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('20:30', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    value: '24h',
+                    groupValue: selected,
+                    activeColor: AppColors.primary,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setModalState(() => selected = val);
+                        _storage.timeFormat = val;
+                        setState(() {});
+                        Navigator.pop(ctx);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -306,20 +365,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // Safe time parts extraction
+  // Safe time parts extraction using authoritative presentation TimeFormatHelper
   (String, String) _safeTimeParts(String timeStr) {
-    try {
-      final clean = timeStr.trim();
-      final parts = clean.split(RegExp(r'\s+'));
-      if (parts.length >= 2) {
-        return (parts[0], parts[1]);
-      } else if (parts.length == 1 && parts[0].isNotEmpty) {
-        return (parts[0], '');
-      }
-      return ('--:--', '');
-    } catch (_) {
-      return ('--:--', '');
-    }
+    return TimeFormatHelper.safeTimeParts(timeStr, is24Hour: _storage.is24HourTime);
   }
 
   Widget _buildTimelineItem(BuildContext context, ScheduleItem item, bool isLast) {
@@ -340,21 +388,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: isCompleted
-                  ? (isDark ? Colors.green.shade900.withValues(alpha: 0.3) : Colors.green.shade50)
+                  ? (isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : const Color(0xFFF0FDF4))
                   : (isDark ? Colors.blue.shade900.withValues(alpha: 0.3) : Colors.blue.shade50),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isCompleted
-                    ? (isDark ? Colors.green.shade700 : Colors.green.shade200)
-                    : (isDark ? Colors.blue.shade700 : Colors.blue.shade200),
+                    ? (isDark ? const Color(0xFF10B981).withValues(alpha: 0.5) : const Color(0xFF86EFAC))
+                    : (isDark ? Colors.blue.shade700 : Colors.blue.shade300),
                 width: 1,
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  Icons.water_drop_rounded,
-                  color: isCompleted ? (isDark ? Colors.greenAccent : Colors.green) : Colors.blueAccent,
+                  isCompleted ? Icons.check_circle_rounded : Icons.water_drop_rounded,
+                  color: isCompleted ? const Color(0xFF16A34A) : (isDark ? Colors.blueAccent : const Color(0xFF0369A1)),
                   size: 15,
                 ),
                 const SizedBox(width: 6),
@@ -365,20 +413,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       decoration: isCompleted ? TextDecoration.lineThrough : null,
+                      decorationColor: const Color(0xFF16A34A),
                       color: isCompleted
-                          ? (isDark ? Colors.greenAccent : Colors.green.shade800)
-                          : (isDark ? Colors.blue.shade300 : Colors.blue.shade900),
+                          ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
+                          : (isDark ? Colors.blue.shade200 : const Color(0xFF1E3A8A)),
                     ),
                   ),
                 ),
                 Text(
-                  item.time,
-                  style: TextStyle(fontSize: 10, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.bold),
+                  TimeFormatHelper.format(item.time, is24Hour: _storage.is24HourTime),
+                  style: TextStyle(fontSize: 10, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(width: 6),
                 Icon(
                   isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                  color: isCompleted ? (isDark ? Colors.greenAccent : Colors.green) : Colors.blue.shade300,
+                  color: isCompleted ? const Color(0xFF16A34A) : (isDark ? Colors.blue.shade300 : const Color(0xFF0369A1)),
                   size: 14,
                 ),
               ],
@@ -388,6 +437,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       );
     }
 
+    final isCompleted = item.status == ActivityStatus.completed;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,20 +518,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   child: Card(
                     margin: EdgeInsets.zero,
                     elevation: isDark ? 0 : 0.5,
-                    color: theme.cardColor,
+                    color: isCompleted
+                        ? (isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : const Color(0xFFF0FDF4))
+                        : theme.cardColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+                      side: BorderSide(
+                        color: isCompleted
+                            ? (isDark ? const Color(0xFF10B981).withValues(alpha: 0.5) : const Color(0xFF86EFAC))
+                            : (isDark ? Colors.white12 : Colors.grey.shade200),
+                        width: isCompleted ? 1.2 : 1.0,
+                      ),
                     ),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border(
                           left: BorderSide(
-                            color: item.requiresCompletionStatus
-                                ? (item.status == ActivityStatus.completed ? const Color(0xFF16A34A) : Colors.orange.shade800)
-                                : item.category.color,
-                            width: item.requiresCompletionStatus ? 3.5 : 2.5,
+                            color: isCompleted
+                                ? const Color(0xFF16A34A)
+                                : (item.requiresCompletionStatus
+                                    ? Colors.orange.shade800
+                                    : item.category.color),
+                            width: isCompleted ? 4.0 : (item.requiresCompletionStatus ? 3.5 : 2.5),
                           ),
                         ),
                       ),
@@ -532,8 +591,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 4.0),
                               child: Icon(
-                                Icons.notifications_active_outlined,
-                                color: item.category.color,
+                                isCompleted ? Icons.check_circle_rounded : Icons.notifications_active_outlined,
+                                color: isCompleted ? const Color(0xFF16A34A) : item.category.color,
                                 size: 16,
                               ),
                             ),
@@ -545,6 +604,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               children: [
                                 Row(
                                   children: [
+                                    if (isCompleted) ...[
+                                      const Icon(
+                                        Icons.check_circle_rounded,
+                                        color: Color(0xFF16A34A),
+                                        size: 15,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
                                     Expanded(
                                       child: Text(
                                         item.title,
@@ -552,8 +619,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                           fontSize: 12.5,
                                           fontWeight: item.requiresCompletionStatus ? FontWeight.bold : FontWeight.w600,
                                           decoration: item.status == ActivityStatus.completed ? TextDecoration.lineThrough : null,
+                                          decorationColor: const Color(0xFF16A34A),
                                           color: item.status == ActivityStatus.completed
-                                              ? (isDark ? Colors.grey.shade500 : Colors.grey.shade600)
+                                              ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
                                               : (isDark ? Colors.white : Colors.black87),
                                         ),
                                         maxLines: 1,
@@ -772,19 +840,32 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _buildStatusChip(ActivityStatus status) {
+    final isCompleted = status == ActivityStatus.completed;
     return Container(
       decoration: BoxDecoration(
-        color: status.color.withValues(alpha: 0.12),
+        color: isCompleted
+            ? const Color(0xFFDCFCE7)
+            : status.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
+        border: isCompleted ? Border.all(color: const Color(0xFF86EFAC), width: 0.8) : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-      child: Text(
-        status.displayName,
-        style: TextStyle(
-          fontSize: 9.5,
-          fontWeight: FontWeight.bold,
-          color: status.color,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isCompleted) ...[
+            const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 10),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            status.displayName,
+            style: TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.bold,
+              color: isCompleted ? const Color(0xFF15803D) : status.color,
+            ),
+          ),
+        ],
       ),
     );
   }

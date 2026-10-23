@@ -34,12 +34,15 @@ class ContextEngine {
 
     try {
       const [uRows] = await pool.query('SELECT id, name, email FROM users WHERE id = ?', [userId]);
+      const explicitUserName = (options.userName || '').trim();
       if (uRows && uRows[0]) {
         userContext = {
           userId: uRows[0].id,
-          name: uRows[0].name,
+          name: explicitUserName || uRows[0].name,
           email: uRows[0].email
         };
+      } else if (explicitUserName) {
+        userContext.name = explicitUserName;
       }
       aiPreferences = await AiPreferenceRepository.getPreferences(userId);
       userContext.assistantName = aiPreferences.assistantName;
@@ -264,6 +267,7 @@ class ContextEngine {
     // 5. Build Standardized Context Package
     return {
       user: userContext,
+      userName: userContext.name || (options.userName || '').trim(),
       preferences: aiPreferences,
       temporalContext: temporal,
       categories,

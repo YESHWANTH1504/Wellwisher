@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/routes/app_routes.dart';
 import '../services/app_service_locator.dart';
 import '../services/notification_service.dart';
 import '../services/voice_notification_service.dart';
@@ -82,6 +83,19 @@ class _WorkerMainShellScreenState extends State<WorkerMainShellScreen> {
       body: IndexedStack(
         index: _currentIndex,
         children: screens,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.pushNamed(context, AppRoutes.jarvis);
+        },
+        backgroundColor: const Color(0xFF00F0FF),
+        foregroundColor: const Color(0xFF050811),
+        elevation: 6,
+        icon: const Icon(Icons.auto_awesome, size: 20),
+        label: const Text(
+          'JARVIS AI',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

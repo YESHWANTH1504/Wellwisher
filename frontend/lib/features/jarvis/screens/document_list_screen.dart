@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import '../core/jarvis_colors.dart';
+import '../core/jarvis_typography.dart';
 import '../controller/document_controller.dart';
 import '../models/document_models.dart';
 import 'document_upload_screen.dart';
 import 'document_detail_screen.dart';
 import 'document_comparison_screen.dart';
 
+/// Futuristic JARVIS Document Intelligence List screen.
+/// Multimodal document management, parameter extraction status, and comparison analysis.
 class DocumentListScreen extends StatefulWidget {
   final DocumentController? controller;
 
@@ -19,8 +23,8 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   final List<Map<String, String?>> _categories = [
-    {'label': 'All', 'value': null},
-    {'label': 'Blood Reports', 'value': 'BLOOD_REPORT'},
+    {'label': 'All Documents', 'value': null},
+    {'label': 'Blood Panels', 'value': 'BLOOD_REPORT'},
     {'label': 'Lab Reports', 'value': 'LAB_REPORT'},
     {'label': 'Prescriptions', 'value': 'PRESCRIPTION'},
     {'label': 'Medication Labels', 'value': 'MEDICATION_LABEL'},
@@ -53,45 +57,68 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
     final selectedFilter = _controller.selectedFilter;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: JarvisColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('JARVIS Health Documents', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: JarvisColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: JarvisColors.cyan, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('MULTIMODAL INTELLIGENCE', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+            Text('JARVIS Health Documents', style: JarvisTypography.titleMedium),
+          ],
+        ),
         actions: [
-          if (docs.length >= 2)
-            IconButton(
-              icon: const Icon(Icons.compare_arrows_rounded, color: Color(0xFF38BDF8)),
-              tooltip: 'Compare Reports',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DocumentComparisonScreen()),
-                );
-              },
+          IconButton(
+            icon: const Icon(Icons.compare_arrows, color: JarvisColors.cyan),
+            tooltip: 'Compare Reports',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DocumentComparisonScreen()),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: JarvisColors.cyan),
+            tooltip: 'Sync Documents',
+            onPressed: () => _controller.loadDocuments(),
+          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: JarvisColors.cyan,
+        foregroundColor: Colors.black,
+        icon: const Icon(Icons.document_scanner),
+        label: const Text('Scan Document', style: TextStyle(fontWeight: FontWeight.bold)),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DocumentUploadScreen()),
+        ),
       ),
       body: Column(
         children: [
           // Search Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
+                color: JarvisColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: JarvisColors.border),
               ),
               child: TextField(
                 controller: _searchController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: JarvisTypography.bodyMedium,
                 decoration: InputDecoration(
-                  hintText: 'Search documents by test or filename...',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF38BDF8)),
+                  hintText: 'Search documents, biomarkers, or clinics...',
+                  hintStyle: TextStyle(color: JarvisColors.textDisabled),
+                  prefixIcon: const Icon(Icons.search, color: JarvisColors.cyan),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.white38),
+                          icon: const Icon(Icons.clear, color: JarvisColors.textSecondary),
                           onPressed: () {
                             _searchController.clear();
                             _controller.search('');
@@ -99,149 +126,128 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                         )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
-                onSubmitted: (val) => _controller.search(val),
+                onChanged: (val) => _controller.search(val),
               ),
             ),
           ),
 
-          // Category Chips
+          // Categories Filter Row
           SizedBox(
-            height: 42,
+            height: 48,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final cat = _categories[index];
+              itemBuilder: (context, idx) {
+                final cat = _categories[idx];
                 final isSelected = selectedFilter == cat['value'];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
                   child: FilterChip(
                     label: Text(cat['label']!),
                     selected: isSelected,
-                    selectedColor: const Color(0xFF38BDF8),
-                    backgroundColor: const Color(0xFF1E293B),
+                    selectedColor: JarvisColors.cyan.withValues(alpha: 0.2),
+                    backgroundColor: JarvisColors.surface,
+                    checkmarkColor: JarvisColors.cyan,
                     labelStyle: TextStyle(
-                      color: isSelected ? const Color(0xFF0F172A) : Colors.white70,
+                      color: isSelected ? JarvisColors.cyan : JarvisColors.textSecondary,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       fontSize: 12,
                     ),
-                    onSelected: (_) => _controller.filterByType(cat['value']),
+                    side: BorderSide(
+                      color: isSelected ? JarvisColors.cyan : JarvisColors.border,
+                    ),
+                    onSelected: (selected) {
+                      _controller.filterByType(selected ? cat['value'] : null);
+                    },
                   ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 6),
+
+          const SizedBox(height: 8),
 
           // Document List
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8)))
+                ? const Center(child: CircularProgressIndicator(color: JarvisColors.cyan))
                 : docs.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.folder_open_rounded, size: 54, color: Colors.white.withValues(alpha: 0.3)),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'No documents uploaded yet',
-                              style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Upload a blood report or prescription to start.',
-                              style: TextStyle(color: Colors.white38, fontSize: 13),
-                            ),
+                            Icon(Icons.inventory_2_outlined, size: 54, color: JarvisColors.textDisabled),
+                            const SizedBox(height: 14),
+                            Text('No documents found.', style: JarvisTypography.bodyLarge.copyWith(color: JarvisColors.textSecondary)),
+                            const SizedBox(height: 8),
+                            Text('Tap "+ Give to JARVIS" to scan or paste a report.', style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textDisabled)),
                           ],
                         ),
                       )
-                    : RefreshIndicator(
-                        onRefresh: () => _controller.loadDocuments(),
-                        color: const Color(0xFF38BDF8),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          itemCount: docs.length,
-                          itemBuilder: (context, index) {
-                            final doc = docs[index];
-                            return _buildDocumentCard(doc);
-                          },
-                        ),
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                        itemCount: docs.length,
+                        itemBuilder: (context, idx) {
+                          final doc = docs[idx];
+                          return _buildDocumentCard(doc);
+                        },
                       ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF38BDF8),
-        foregroundColor: const Color(0xFF0F172A),
-        icon: const Icon(Icons.add_a_photo_rounded),
-        label: const Text('Scan Document', style: TextStyle(fontWeight: FontWeight.bold)),
-        onPressed: () async {
-          final res = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DocumentUploadScreen()),
-          );
-          if (res == true) {
-            _controller.loadDocuments();
-          }
-        },
       ),
     );
   }
 
   Widget _buildDocumentCard(AiDocumentModel doc) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white10),
+        color: JarvisColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: JarvisColors.border),
       ),
       child: Material(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          leading: CircleAvatar(
-            backgroundColor: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-            child: Icon(doc.typeIcon, color: const Color(0xFF38BDF8), size: 22),
+          contentPadding: const EdgeInsets.all(16),
+          leading: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: JarvisColors.cyan.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.description_outlined, color: JarvisColors.cyan, size: 24),
           ),
-          title: Text(
-            doc.originalFilename,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5),
-            overflow: TextOverflow.ellipsis,
+          title: Text(doc.originalFilename, style: JarvisTypography.titleSmall),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                '${doc.displayType} • Status: ${doc.processingStatus}',
+                style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Uploaded: ${doc.uploadedAt.split('T')[0]} • ${doc.formattedFileSize}',
+                style: JarvisTypography.monospace.copyWith(color: JarvisColors.textDisabled, fontSize: 11),
+              ),
+            ],
           ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(
-              children: [
-                Text(
-                  doc.displayType,
-                  style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '• ${doc.formattedFileSize}',
-                  style: const TextStyle(color: Colors.white38, fontSize: 12),
-                ),
-              ],
+          trailing: const Icon(Icons.arrow_forward_ios, color: JarvisColors.cyan, size: 16),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DocumentDetailScreen(
+                documentId: doc.id,
+                initialDocument: doc,
+              ),
             ),
           ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white38),
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => DocumentDetailScreen(
-                  documentId: doc.id,
-                  initialDocument: doc,
-                ),
-              ),
-            );
-            _controller.loadDocuments();
-          },
         ),
       ),
     );

@@ -26,14 +26,7 @@ class AgentExecutor {
         console.warn('AgentExecutor: Step audit log warning:', err.message);
       }
 
-      // 2. Check Idempotency Cache for mutation actions
-      const cached = idempotencyManager.check(userId, step.toolName, step.arguments);
-      if (cached) {
-        results.push(cached);
-        continue;
-      }
-
-      // 3. Handle Confirmation Token if supplied by client
+      // 2. Handle Confirmation Token if supplied by client (authoritative validation)
       let isConfirmed = false;
       if (confirmationId) {
         const confValidation = confirmationManager.validateAndConsume(
@@ -52,6 +45,15 @@ class AgentExecutor {
           };
         }
         isConfirmed = true;
+      }
+
+      // 3. Check Idempotency Cache for mutation actions
+      const cached = idempotencyManager.checkAsync
+        ? await idempotencyManager.checkAsync(userId, step.toolName, step.arguments)
+        : idempotencyManager.check(userId, step.toolName, step.arguments);
+      if (cached) {
+        results.push(cached);
+        continue;
       }
 
       // 4. Execute strictly through Tool Registry

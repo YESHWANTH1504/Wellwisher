@@ -1,9 +1,9 @@
 const pool = require('../config/db');
-const { defaultAgent } = require('../services/jarvis/agent/jarvisAgent');
+const { masterOrchestrator } = require('../services/jarvis/orchestrator/JarvisMasterOrchestrator');
 
 class AiController {
   /**
-   * AI Conversational Agent Endpoint (Routed to JARVIS Orchestrator)
+   * AI Conversational Agent Endpoint (Unified Master Orchestrator)
    */
   static async chat(req, res) {
     try {
@@ -21,26 +21,29 @@ class AiController {
         });
       }
 
-      const agentResponse = await defaultAgent.processRequest(req.userId, trimmedMessage, {
+      const agentResponse = await masterOrchestrator.process(req.userId, trimmedMessage, {
         conversationId,
+        sessionId: conversationId,
         timezone: timezone || 'UTC',
         langCode: langCode || language || 'en-US'
       });
 
-      // Standardize response payload with backward-compatible reply data
+      // Standardize response payload with backward-compatible reply data and real execution steps
       return res.json({
-        success: agentResponse.success,
-        type: agentResponse.type,
-        intent: agentResponse.intent,
-        message: agentResponse.message,
+        success: agentResponse.success !== false,
+        type: agentResponse.intent || 'FINAL_RESPONSE',
+        intent: agentResponse.intent || 'GENERAL_CONVERSATION',
+        message: agentResponse.speech || agentResponse.message,
+        steps: agentResponse.steps || [],
         data: {
-          reply: agentResponse.message,
+          reply: agentResponse.speech || agentResponse.message,
           action: agentResponse.action || null,
-          requiresConfirmation: agentResponse.requiresConfirmation,
+          requiresConfirmation: agentResponse.requiresConfirmation || false,
           confirmation: agentResponse.confirmation || null,
-          agentRunId: agentResponse.agentRunId,
-          conversationId: agentResponse.conversationId,
-          timestamp: agentResponse.timestamp
+          steps: agentResponse.steps || [],
+          agentRunId: agentResponse.requestId,
+          conversationId: agentResponse.sessionId || conversationId,
+          timestamp: agentResponse.timestamp || new Date().toISOString()
         }
       });
     } catch (err) {
@@ -49,6 +52,47 @@ class AiController {
         success: false,
         errorCode: 'INTERNAL_AGENT_ERROR',
         message: 'Failed to process AI request'
+      });
+    }
+  }
+
+  /**
+   * Action Verification Endpoint for Native Android Execution Verification
+   */
+  static async verifyAction(req, res) {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
+      }
+
+      const { sessionId, conversationId, action, packageName, appName, nativeResult } = req.body || {};
+      const activeSessionId = sessionId || conversationId;
+
+      const verification = await masterOrchestrator.verifyNativeAction(req.userId, activeSessionId, {
+        action,
+        packageName,
+        appName,
+        nativeResult
+      });
+
+      return res.json({
+        success: verification.success,
+        verified: verification.verified,
+        message: verification.speech || verification.message,
+        speech: verification.speech,
+        data: {
+          reply: verification.speech || verification.message,
+          action: verification.action,
+          executionStatus: verification.executionStatus,
+          verified: verification.verified,
+          conversationId: activeSessionId
+        }
+      });
+    } catch (err) {
+      console.error('AI verifyAction error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to verify action'
       });
     }
   }
@@ -67,22 +111,38 @@ class AiController {
       if (!confirmationId || !toolName) {
         return res.status(400).json({
           success: false,
-          message: 'confirmationId and toolName are required for confirmation execution.'
+          message: 'Confirmation ID and tool name are required'
         });
       }
 
-      const agentResponse = await defaultAgent.processRequest(req.userId, '', {
+      const agentResponse = await masterOrchestrator.process(req.userId, toolName, {
+        isConfirmed: true,
         confirmationId,
         toolName,
-        arguments: toolArgs || {}
+        arguments: toolArgs
       });
 
-      return res.json(agentResponse);
+      return res.json({
+        success: agentResponse.success !== false,
+        message: agentResponse.speech || agentResponse.message,
+        type: 'ACTION_COMPLETED',
+        intent: agentResponse.intent || 'ACTION_COMPLETED',
+        data: {
+          reply: agentResponse.speech || agentResponse.message,
+          action: {
+            tool: toolName,
+            status: 'EXECUTED',
+            result: agentResponse.data || {}
+          },
+          steps: agentResponse.steps || [],
+          timestamp: new Date().toISOString()
+        }
+      });
     } catch (err) {
-      console.error('Confirm action error:', err.message);
+      console.error('Action confirmation error:', err.message);
       return res.status(500).json({
         success: false,
-        errorCode: 'CONFIRMATION_ERROR',
+        errorCode: 'CONFIRMATION_FAILED',
         message: 'Failed to execute confirmed action'
       });
     }

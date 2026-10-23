@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../core/config/app_config.dart';
+import '../core/routes/app_routes.dart';
 import 'local_storage_service.dart';
 
 class ApiClient {
-  static String get baseUrl => kIsWeb ? 'http://localhost:3000/api' : 'http://10.0.2.2:3000/api';
-  static const String fallbackUrl = 'http://localhost:3000/api';
+  static String get baseUrl => AppConfig.baseUrl;
+  static String get fallbackUrl => AppConfig.fallbackUrl;
 
-  static const Duration defaultTimeout = Duration(seconds: 8);
+  static const Duration defaultTimeout = Duration(seconds: 10);
   static const Duration aiTimeout = Duration(seconds: 25);
 
   final LocalStorageService _storage = LocalStorageService();
@@ -25,9 +27,7 @@ class ApiClient {
   }
 
   Uri _buildUri(String base, String path) {
-    final cleanPath = path.startsWith('/api/') ? path.substring(4) : path;
-    final normalizedPath = cleanPath.startsWith('/') ? cleanPath : '/$cleanPath';
-    return Uri.parse('$base$normalizedPath');
+    return AppConfig.buildUri(base, path);
   }
 
   Duration _getTimeoutForPath(String path) {
@@ -44,12 +44,12 @@ class ApiClient {
     try {
       if (kDebugMode) print('API GET Request: $uri');
       final response = await http.get(uri, headers: _headers).timeout(timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, path: path);
     } catch (e) {
       try {
         final fallbackUri = _buildUri(fallbackUrl, path);
         final response = await http.get(fallbackUri, headers: _headers).timeout(timeout);
-        return _handleResponse(response);
+        return _handleResponse(response, path: path);
       } catch (_) {
         if (kDebugMode) print('API GET fallback for $path. Operating in instant local mode.');
         return {'success': false, 'data': [], 'error': e.toString()};
@@ -66,14 +66,14 @@ class ApiClient {
       final response = await http
           .post(uri, headers: _headers, body: jsonEncode(body))
           .timeout(timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, path: path);
     } catch (e) {
       try {
         final fallbackUri = _buildUri(fallbackUrl, path);
         final response = await http
           .post(fallbackUri, headers: _headers, body: jsonEncode(body))
           .timeout(timeout);
-        return _handleResponse(response);
+        return _handleResponse(response, path: path);
       } catch (_) {
         if (kDebugMode) print('API POST fallback for $path.');
         return {'success': false, 'data': body, 'error': e.toString()};
@@ -90,14 +90,14 @@ class ApiClient {
       final response = await http
           .put(uri, headers: _headers, body: jsonEncode(body))
           .timeout(timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, path: path);
     } catch (e) {
       try {
         final fallbackUri = _buildUri(fallbackUrl, path);
         final response = await http
           .put(fallbackUri, headers: _headers, body: jsonEncode(body))
           .timeout(timeout);
-        return _handleResponse(response);
+        return _handleResponse(response, path: path);
       } catch (_) {
         if (kDebugMode) print('API PUT fallback for $path.');
         return {'success': false, 'data': body, 'error': e.toString()};
@@ -112,12 +112,12 @@ class ApiClient {
     try {
       if (kDebugMode) print('API DELETE Request: $uri');
       final response = await http.delete(uri, headers: _headers).timeout(timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, path: path);
     } catch (e) {
       try {
         final fallbackUri = _buildUri(fallbackUrl, path);
         final response = await http.delete(fallbackUri, headers: _headers).timeout(timeout);
-        return _handleResponse(response);
+        return _handleResponse(response, path: path);
       } catch (_) {
         if (kDebugMode) print('API DELETE fallback for $path.');
         return {'success': false, 'error': e.toString()};
@@ -125,7 +125,14 @@ class ApiClient {
     }
   }
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
+  Map<String, dynamic> _handleResponse(http.Response response, {String? path}) {
+    if (response.statusCode == 401 && !(path != null && path.contains('/auth/'))) {
+      if (kDebugMode) print('API 401 Unauthorized: Session token expired or invalid.');
+      _storage.logout();
+      try {
+        AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+      } catch (_) {}
+    }
     try {
       final body = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {

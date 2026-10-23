@@ -56,12 +56,13 @@ const workflowTools = [
       }
     },
     execute: async (context, input) => {
+      const targetDate = input.date || new Date().toISOString().split('T')[0];
       const slots = await defaultMockCalendarProvider.findAvailability(context.userId, {
-        date: input.date,
+        date: targetDate,
         durationMinutes: input.durationMinutes || 30
       });
       return {
-        date: input.date || '2026-08-21',
+        date: targetDate,
         availableSlotsCount: slots.length,
         slots: slots.map(s => ({
           startTime: s.startTime,

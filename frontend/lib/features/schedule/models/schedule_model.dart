@@ -203,26 +203,56 @@ class ScheduleItem {
   }
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
+    DateTime parsedDate;
+    try {
+      final rawDate = json['date'] as String?;
+      if (rawDate != null && rawDate.contains('-')) {
+        final dateOnlyPart = rawDate.contains('T') ? rawDate.split('T')[0] : rawDate;
+        final parts = dateOnlyPart.split('-').map((p) => int.tryParse(p) ?? 1).toList();
+        parsedDate = DateTime(parts[0], parts.length > 1 ? parts[1] : 1, parts.length > 2 ? parts[2] : 1);
+      } else {
+        parsedDate = DateTime.now();
+      }
+    } catch (_) {
+      parsedDate = DateTime.now();
+    }
+
+    DateTime parsedCreated;
+    try {
+      final rawCreated = json['createdAt'] ?? json['created_at'];
+      parsedCreated = rawCreated != null ? DateTime.parse(rawCreated.toString()) : DateTime.now();
+    } catch (_) {
+      parsedCreated = DateTime.now();
+    }
+
+    DateTime parsedUpdated;
+    try {
+      final rawUpdated = json['updatedAt'] ?? json['updated_at'];
+      parsedUpdated = rawUpdated != null ? DateTime.parse(rawUpdated.toString()) : DateTime.now();
+    } catch (_) {
+      parsedUpdated = DateTime.now();
+    }
+
     return ScheduleItem(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
-      time: json['time'] as String,
+      id: json['id']?.toString() ?? 'rot_${DateTime.now().millisecondsSinceEpoch}',
+      title: json['title']?.toString() ?? 'Untitled',
+      description: json['description']?.toString() ?? '',
+      time: json['time']?.toString() ?? '12:00 PM',
       category: ActivityCategory.values.firstWhere(
-        (e) => e.name == json['category'],
+        (e) => e.name.toLowerCase() == (json['category'] ?? '').toString().toLowerCase(),
         orElse: () => ActivityCategory.custom,
       ),
       status: ActivityStatus.values.firstWhere(
-        (e) => e.name == json['status'],
+        (e) => e.name.toLowerCase() == (json['status'] ?? '').toString().toLowerCase(),
         orElse: () => ActivityStatus.pending,
       ),
-      date: DateTime.parse(json['date'] as String),
-      reminderEnabled: json['reminderEnabled'] as bool? ?? true,
+      date: parsedDate,
+      reminderEnabled: json['reminderEnabled'] == true || json['reminder_enabled'] == 1,
       isSynced: json['isSynced'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: parsedCreated,
+      updatedAt: parsedUpdated,
       deletedAt: json['deletedAt'] != null
-          ? DateTime.parse(json['deletedAt'] as String)
+          ? DateTime.tryParse(json['deletedAt'].toString())
           : null,
     );
   }

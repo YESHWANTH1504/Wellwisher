@@ -34,8 +34,10 @@ class FamilyController {
         }
       ];
 
+      const userIdentifier = req.userEmail || req.userName || 'Family Member';
       const [nudges] = await pool.query(
-        'SELECT * FROM family_nudges ORDER BY created_at DESC LIMIT 10'
+        'SELECT * FROM family_nudges WHERE from_user_name = ? OR to_user_name = ? OR to_user_name = "Family Member" ORDER BY created_at DESC LIMIT 10',
+        [userIdentifier, userIdentifier]
       );
 
       return res.json({

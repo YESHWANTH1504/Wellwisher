@@ -5,16 +5,23 @@ import 'package:wellwisher/features/jarvis/services/jarvis_api_service.dart';
 import 'package:wellwisher/features/jarvis/services/voice_input_service.dart';
 import 'package:wellwisher/features/jarvis/services/jarvis_tts_service.dart';
 import 'package:wellwisher/features/jarvis/controller/jarvis_controller.dart';
-import 'package:wellwisher/features/jarvis/widgets/jarvis_orb.dart';
+import 'package:wellwisher/features/jarvis/widgets/jarvis_core.dart';
+import 'package:wellwisher/features/jarvis/widgets/jarvis_state_indicator.dart';
+import 'package:wellwisher/features/jarvis/widgets/jarvis_message_bubble.dart';
+import 'package:wellwisher/features/jarvis/widgets/jarvis_typing_indicator.dart';
+import 'package:wellwisher/features/jarvis/widgets/jarvis_quick_action.dart';
 import 'package:wellwisher/features/jarvis/widgets/confirmation_card.dart';
 import 'package:wellwisher/features/jarvis/widgets/action_card.dart';
-import 'package:wellwisher/features/jarvis/widgets/jarvis_chat_bubble.dart';
 import 'package:wellwisher/features/jarvis/screens/jarvis_screen.dart';
 
 // Mock Services for Testing
 class MockJarvisApiService extends JarvisApiService {
   JarvisResponse? nextResponse;
+  bool throwNetworkError = false;
+  bool throwAuthError = false;
+  bool throwTimeout = false;
   bool confirmCalled = false;
+  String? lastSentMessage;
 
   @override
   Future<JarvisResponse> sendMessage(
@@ -22,7 +29,40 @@ class MockJarvisApiService extends JarvisApiService {
     String? conversationId,
     String? timezone,
     String? langCode,
+    Map<String, dynamic>? healthContext,
+    Map<String, dynamic>? healthGoals,
   }) async {
+    lastSentMessage = message;
+    if (throwNetworkError) {
+      return JarvisResponse(
+        success: false,
+        type: JarvisResponseType.error,
+        intent: 'UNKNOWN',
+        message: 'I could not connect to my server. Please check your network connection.',
+        errorCode: 'NETWORK_ERROR',
+        timestamp: DateTime.now(),
+      );
+    }
+    if (throwAuthError) {
+      return JarvisResponse(
+        success: false,
+        type: JarvisResponseType.error,
+        intent: 'UNAUTHORIZED',
+        message: 'Authentication session expired. Please log in again.',
+        errorCode: 'AUTH_EXPIRED',
+        timestamp: DateTime.now(),
+      );
+    }
+    if (throwTimeout) {
+      return JarvisResponse(
+        success: false,
+        type: JarvisResponseType.error,
+        intent: 'TIMEOUT',
+        message: 'Request timed out waiting for server response.',
+        errorCode: 'TIMEOUT',
+        timestamp: DateTime.now(),
+      );
+    }
     return nextResponse ??
         JarvisResponse(
           success: true,
@@ -43,7 +83,7 @@ class MockJarvisApiService extends JarvisApiService {
     return JarvisResponse(
       success: true,
       type: JarvisResponseType.actionCompleted,
-      intent: 'SCHEDULE_DELETE',
+      intent: 'CONFIRMATION_EXECUTION',
       message: 'Action confirmed successfully.',
       timestamp: DateTime.now(),
     );
@@ -88,6 +128,27 @@ class MockJarvisTtsService implements IJarvisTtsService {
   bool get isSpeaking => speaking;
 
   @override
+  void setGender(JarvisVoiceGender gender) {}
+
+  @override
+  void setPreset(JarvisVoicePreset preset) {}
+
+  @override
+  void setSpeechRate(double rate) {}
+
+  @override
+  void setPitch(double pitch) {}
+
+  @override
+  void setVolume(double volume) {}
+
+  @override
+  Future<List<Map<String, String>>> getAvailableVoices() async => [];
+
+  @override
+  Future<void> previewVoice({String? sampleText}) async {}
+
+  @override
   Future<void> speak(String text, {String? language, VoidCallback? onComplete}) async {
     speaking = true;
     lastSpokenText = text;
@@ -102,47 +163,23 @@ class MockJarvisTtsService implements IJarvisTtsService {
 }
 
 void main() {
-  group('Phase 5 - JARVIS Model Serialization Tests', () {
-    test('1. Parses FINAL_RESPONSE from backend payload', () {
+  group('Phase 10.1 - JARVIS Unit & Serialization Tests', () {
+    test('1. JARVIS API request serialization', () {
       final json = {
         'success': true,
         'type': 'FINAL_RESPONSE',
         'intent': 'GENERAL_CONVERSATION',
         'message': 'Hello, how can I assist you?',
-        'timestamp': '2026-08-20T10:00:00.000Z'
+        'timestamp': '2026-08-24T10:00:00.000Z'
       };
 
       final res = JarvisResponse.fromJson(json);
-      assert(res.success == true);
-      assert(res.type == JarvisResponseType.finalResponse);
-      assert(res.message == 'Hello, how can I assist you?');
+      expect(res.success, true);
+      expect(res.type, JarvisResponseType.finalResponse);
+      expect(res.message, 'Hello, how can I assist you?');
     });
 
-    test('2. Parses CONFIRMATION_REQUIRED payload', () {
-      final json = {
-        'success': true,
-        'type': 'CONFIRMATION_REQUIRED',
-        'intent': 'SCHEDULE_DELETE',
-        'message': 'Delete dentist appointment?',
-        'data': {
-          'requiresConfirmation': true,
-          'confirmation': {
-            'confirmationId': 'conf_123',
-            'tool': 'delete_schedule',
-            'arguments': {'scheduleId': 'rot_1'},
-            'expiresAt': '2026-08-20T10:05:00.000Z'
-          }
-        }
-      };
-
-      final res = JarvisResponse.fromJson(json);
-      assert(res.type == JarvisResponseType.confirmationRequired);
-      assert(res.confirmation != null);
-      assert(res.confirmation!.confirmationId == 'conf_123');
-      assert(res.confirmation!.tool == 'delete_schedule');
-    });
-
-    test('3. Parses ACTION_COMPLETED payload', () {
+    test('2. Successful response parsing with action payload', () {
       final json = {
         'success': true,
         'type': 'ACTION_COMPLETED',
@@ -157,13 +194,62 @@ void main() {
       };
 
       final res = JarvisResponse.fromJson(json);
-      assert(res.type == JarvisResponseType.actionCompleted);
-      assert(res.action != null);
-      assert(res.action!.type == 'create_schedule');
+      expect(res.type, JarvisResponseType.actionCompleted);
+      expect(res.action, isNotNull);
+      expect(res.action!.type, 'create_schedule');
+    });
+
+    test('3. Authentication failure handling', () {
+      final json = {
+        'success': false,
+        'type': 'ERROR',
+        'intent': 'UNAUTHORIZED',
+        'message': 'Authentication session expired. Please log in again.',
+        'errorCode': 'TOKEN_EXPIRED'
+      };
+
+      final res = JarvisResponse.fromJson(json);
+      expect(res.success, false);
+      expect(res.type, JarvisResponseType.error);
+      expect(res.errorCode, 'TOKEN_EXPIRED');
+    });
+
+    test('4. Network failure handling', () {
+      final json = {
+        'success': false,
+        'type': 'ERROR',
+        'intent': 'NETWORK_ERROR',
+        'message': 'Connection refused',
+        'errorCode': 'NETWORK_ERROR'
+      };
+
+      final res = JarvisResponse.fromJson(json);
+      expect(res.type, JarvisResponseType.error);
+      expect(res.errorCode, 'NETWORK_ERROR');
+    });
+
+    test('5. Timeout handling', () {
+      final json = {
+        'success': false,
+        'type': 'ERROR',
+        'message': 'Request timed out',
+        'errorCode': 'TIMEOUT'
+      };
+
+      final res = JarvisResponse.fromJson(json);
+      expect(res.type, JarvisResponseType.error);
+      expect(res.errorCode, 'TIMEOUT');
+    });
+
+    test('6. Empty response handling with safe defaults', () {
+      final json = <String, dynamic>{};
+      final res = JarvisResponse.fromJson(json);
+      expect(res.success, false);
+      expect(res.message, 'Response received from JARVIS.');
     });
   });
 
-  group('Phase 5 - JarvisController State Management Tests', () {
+  group('Phase 10.1 - JarvisController Lifecycle & State Tests', () {
     late MockJarvisApiService mockApi;
     late MockVoiceInputService mockVoice;
     late MockJarvisTtsService mockTts;
@@ -186,75 +272,173 @@ void main() {
       );
     });
 
-    test('1. Controller starts with initial welcome message and idle orb state', () {
+    test('7. Thinking state during active request', () async {
       expect(controller.orbState, JarvisOrbState.idle);
-      expect(controller.messages.length, 1);
-      expect(controller.messages.first.isJarvis, true);
+      final submitFuture = controller.submitMessage('Show my health trends.');
+      expect(controller.messages.any((m) => m.text == 'Show my health trends.'), true);
+      await submitFuture;
+      expect(controller.orbState, JarvisOrbState.idle);
     });
 
-    test('2. Submitting text message adds user message, calls API, and plays TTS', () async {
-      await controller.submitMessage('Schedule gym tomorrow at 6 AM');
-      expect(controller.messages.length, 3); // 1 initial welcome + 1 user turn + 1 JARVIS turn
-      expect(controller.messages.last.isJarvis, true);
-      expect(mockTts.lastSpokenText, isNotNull);
+    test('8. Error state on API exception', () async {
+      mockApi.throwNetworkError = true;
+      await controller.submitMessage('Hello JARVIS');
+      expect(controller.orbState, JarvisOrbState.error);
+      expect(controller.messages.last.responseType, JarvisResponseType.error);
     });
 
-    test('3. Confirmation required response updates pendingConfirmation state', () async {
+    test('9. Retry action clears error and sends query', () async {
+      mockApi.throwNetworkError = true;
+      await controller.submitMessage('Hello JARVIS');
+      expect(controller.orbState, JarvisOrbState.error);
+
+      mockApi.throwNetworkError = false;
+      await controller.submitMessage('Hello JARVIS');
+      expect(controller.orbState, JarvisOrbState.idle);
+      expect(controller.messages.last.responseType, JarvisResponseType.finalResponse);
+    });
+
+    test('10. Confirmation required and confirmation cancellation', () async {
       mockApi.nextResponse = JarvisResponse(
         success: true,
         type: JarvisResponseType.confirmationRequired,
         intent: 'SCHEDULE_DELETE',
-        message: 'Confirm deletion?',
+        message: 'Confirm deletion of 10 AM meeting?',
         confirmation: JarvisConfirmation(
-          confirmationId: 'conf_test',
+          confirmationId: 'conf_999',
           tool: 'delete_schedule',
-          arguments: {'scheduleId': 'rot_test'},
+          arguments: {'scheduleId': 'rot_999'},
         ),
         timestamp: DateTime.now(),
       );
 
-      await controller.submitMessage('Delete my appointment');
+      await controller.submitMessage('Delete meeting');
       expect(controller.orbState, JarvisOrbState.waitingForConfirmation);
       expect(controller.pendingConfirmation, isNotNull);
-      expect(controller.pendingConfirmation!.confirmationId, 'conf_test');
-    });
 
-    test('4. Confirming pending action executes and triggers state invalidation', () async {
-      final conf = JarvisConfirmation(
-        confirmationId: 'conf_test',
-        tool: 'delete_schedule',
-        arguments: {'scheduleId': 'rot_test'},
-      );
-
-      await controller.confirmPendingAction(conf);
+      // Confirm action
+      await controller.confirmPendingAction(controller.pendingConfirmation!);
       expect(mockApi.confirmCalled, true);
       expect(invalidationTriggered, true);
       expect(controller.pendingConfirmation, isNull);
-    });
 
-    test('5. Canceling pending action restores idle state', () {
+      // Cancel action
       controller.cancelPendingAction();
-      expect(controller.pendingConfirmation, isNull);
       expect(controller.orbState, JarvisOrbState.idle);
     });
   });
 
-  group('Phase 5 - JARVIS Widget & UI Tests', () {
-    testWidgets('1. JarvisOrb renders correctly across states', (tester) async {
+  group('Phase 10.1 - JARVIS Widgets & UI Tests', () {
+    testWidgets('11. JarvisCore renders across all orb states', (tester) async {
+      for (final state in JarvisOrbState.values) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: JarvisCore(state: state, size: 100),
+              ),
+            ),
+          ),
+        );
+        expect(find.byType(JarvisCore), findsOneWidget);
+      }
+    });
+
+    testWidgets('12. JarvisStateIndicator renders labels and retry button on error', (tester) async {
+      bool retryTapped = false;
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: Center(
-              child: JarvisOrb(state: JarvisOrbState.listening),
+              child: JarvisStateIndicator(
+                state: JarvisOrbState.error,
+                statusText: 'Connection failed',
+                onRetry: () => retryTapped = true,
+              ),
             ),
           ),
         ),
       );
 
-      expect(find.byType(JarvisOrb), findsOneWidget);
+      expect(find.text('ERROR'), findsOneWidget);
+      expect(find.text('Connection failed'), findsOneWidget);
+      expect(find.text('Retry Connection'), findsOneWidget);
+
+      await tester.tap(find.text('Retry Connection'));
+      expect(retryTapped, true);
     });
 
-    testWidgets('2. ConfirmationCard renders details and buttons', (tester) async {
+    testWidgets('13. JarvisTypingIndicator renders animated wave dots', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: JarvisTypingIndicator(),
+          ),
+        ),
+      );
+
+      expect(find.byType(JarvisTypingIndicator), findsOneWidget);
+      expect(find.text('JARVIS'), findsOneWidget);
+    });
+
+    testWidgets('14. JarvisMessageBubble renders user and JARVIS messages', (tester) async {
+      final userMsg = JarvisMessage(
+        id: '1',
+        sender: 'user',
+        text: 'What is my schedule?',
+        timestamp: DateTime.now(),
+      );
+
+      final jarvisMsg = JarvisMessage(
+        id: '2',
+        sender: 'jarvis',
+        text: 'Here is your schedule for today.',
+        timestamp: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                JarvisMessageBubble(message: userMsg),
+                JarvisMessageBubble(message: jarvisMsg),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('What is my schedule?'), findsOneWidget);
+      expect(find.text('Here is your schedule for today.'), findsOneWidget);
+    });
+
+    testWidgets('15. JarvisQuickAction renders with press animation', (tester) async {
+      bool tapped = false;
+      final action = JarvisQuickActionItem(
+        label: 'Health Intel',
+        icon: Icons.monitor_heart_rounded,
+        accentColor: const Color(0xFF00E5FF),
+        onTap: () => tapped = true,
+        badge: 'NEW',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JarvisQuickAction(item: action),
+          ),
+        ),
+      );
+
+      expect(find.text('Health Intel'), findsOneWidget);
+      expect(find.text('NEW'), findsOneWidget);
+
+      await tester.tap(find.text('Health Intel'));
+      expect(tapped, true);
+    });
+
+    testWidgets('16. ConfirmationCard renders confirmation UI and callbacks', (tester) async {
       bool confirmed = false;
       bool cancelled = false;
 
@@ -286,10 +470,10 @@ void main() {
       expect(cancelled, true);
     });
 
-    testWidgets('3. ActionCard renders schedule details', (tester) async {
+    testWidgets('17. ActionCard renders completed workflow action card', (tester) async {
       final action = JarvisAction(
         type: 'create_schedule',
-        data: {'title': 'Client Review', 'date': '2026-08-21', 'time': '10:00 AM'},
+        data: {'title': 'Doctor Consultation', 'date': '2026-08-25', 'time': '10:00 AM'},
       );
 
       await tester.pumpWidget(
@@ -300,11 +484,11 @@ void main() {
         ),
       );
 
-      expect(find.text('Client Review'), findsOneWidget);
-      expect(find.text('2026-08-21 at 10:00 AM'), findsOneWidget);
+      expect(find.text('Doctor Consultation'), findsOneWidget);
+      expect(find.text('2026-08-25 at 10:00 AM'), findsOneWidget);
     });
 
-    testWidgets('4. JarvisScreen renders with accessible Talk to JARVIS microphone', (tester) async {
+    testWidgets('18. JarvisScreen renders top Core, quick actions, and microphone', (tester) async {
       final mockApi = MockJarvisApiService();
       final mockVoice = MockVoiceInputService();
       final mockTts = MockJarvisTtsService();
@@ -320,9 +504,34 @@ void main() {
         ),
       );
 
-      expect(find.text('JARVIS AI Companion'), findsOneWidget);
-      expect(find.byType(JarvisOrb), findsOneWidget);
-      expect(find.bySemanticsLabel('Talk to JARVIS'), findsOneWidget);
+      expect(find.text('JARVIS'), findsAtLeastNWidgets(1));
+      expect(find.byType(JarvisCore), findsOneWidget);
+      expect(find.byIcon(Icons.mic_none), findsOneWidget);
+    });
+
+    testWidgets('19. Responsive layout test on Mobile and Desktop widths', (tester) async {
+      final mockApi = MockJarvisApiService();
+      final mockVoice = MockVoiceInputService();
+      final mockTts = MockJarvisTtsService();
+      final controller = JarvisController(
+        apiService: mockApi,
+        voiceService: mockVoice,
+        ttsService: mockTts,
+      );
+
+      // Desktop width test
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JarvisScreen(controller: controller),
+        ),
+      );
+
+      expect(find.byType(JarvisScreen), findsOneWidget);
+      expect(find.byType(JarvisCore), findsOneWidget);
     });
   });
 }

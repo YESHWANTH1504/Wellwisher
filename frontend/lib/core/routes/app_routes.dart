@@ -8,16 +8,14 @@ import '../../features/main_shell.dart';
 import '../../features/worker_main_shell.dart';
 import '../../features/senior_main_shell.dart';
 import '../../services/app_service_locator.dart';
-import '../../features/home/screens/portal_screen.dart';
-import '../../features/authentication/screens/login_screen.dart';
 import '../../features/authentication/screens/worker_login_screen.dart';
 import '../../features/authentication/screens/senior_login_screen.dart';
+import '../../features/authentication/screens/login_screen.dart';
 import '../../features/screen_care/screens/screen_care_settings_screen.dart';
 import '../../features/family/screens/family_screen.dart';
 import '../../features/statistics/screens/statistics_screen.dart';
 import '../../features/health/screens/sleep_mood_screen.dart';
 import '../../features/health/screens/medication_screen.dart';
-import '../../features/ai_assistant/screens/wellwisher_ai_screen.dart';
 import '../../features/voice_companion/screens/senior_voice_companion_screen.dart';
 import '../../features/health/screens/vitals_screen.dart';
 import '../../features/health/screens/ocr_scanner_screen.dart';
@@ -25,18 +23,35 @@ import '../../features/family/screens/caregiver_hub_screen.dart';
 import '../../features/health/screens/cognitive_game_screen.dart';
 import '../../features/health/screens/ai_journal_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/jarvis/screens/jarvis_main_tab_scaffold.dart';
 import '../../features/jarvis/screens/jarvis_screen.dart';
 import '../../features/jarvis/screens/document_list_screen.dart';
 import '../../features/jarvis/screens/document_upload_screen.dart';
 import '../../features/jarvis/screens/document_comparison_screen.dart';
 import '../../features/jarvis/screens/health_intelligence_screen.dart';
 import '../../features/jarvis/screens/jarvis_action_center_screen.dart';
+import '../../features/jarvis/screens/jarvis_context_screen.dart';
+import '../../features/jarvis/screens/jarvis_proactive_screen.dart';
+import '../../features/jarvis/screens/jarvis_proactive_center_screen.dart';
+import '../../features/jarvis/screens/jarvis_offline_intelligence_screen.dart';
+import '../../features/jarvis/screens/jarvis_recovery_center_screen.dart';
+import '../../features/jarvis/screens/jarvis_settings_center.dart';
+
+import '../../services/local_storage_service.dart';
 
 class AppRoutes {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   static const String portal = '/';
   static const String jarvis = '/jarvis';
   static const String jarvisHealth = '/jarvis/health';
   static const String jarvisActionCenter = '/jarvis/action-center';
+  static const String jarvisContext = '/jarvis/context';
+  static const String jarvisProactive = '/jarvis/proactive';
+  static const String jarvisProactiveCenter = '/jarvis/proactive-center';
+  static const String jarvisOfflineCenter = '/jarvis/offline-center';
+  static const String jarvisRecoveryCenter = '/jarvis/recovery-center';
+  static const String jarvisSettingsCenter = '/jarvis/settings-center';
   static const String jarvisDocuments = '/jarvis/documents';
   static const String jarvisDocumentUpload = '/jarvis/documents/upload';
   static const String jarvisDocumentCompare = '/jarvis/documents/compare';
@@ -67,21 +82,31 @@ class AppRoutes {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case portal:
-        return MaterialPageRoute(builder: (_) => const PortalScreen());
       case jarvis:
         return MaterialPageRoute(
-          builder: (_) => JarvisScreen(
-            onStateInvalidationRequired: () {
-              AppServiceLocator().scheduleController.loadRoutines();
-            },
-          ),
+          builder: (_) => LocalStorageService().isLoggedIn
+              ? const JarvisMainTabScaffold()
+              : const LoginScreen(),
         );
       case jarvisHealth:
         return MaterialPageRoute(builder: (_) => const HealthIntelligenceScreen());
       case jarvisActionCenter:
         return MaterialPageRoute(builder: (_) => const JarvisActionCenterScreen());
+      case jarvisContext:
+        return MaterialPageRoute(builder: (_) => const JarvisContextScreen());
+      case jarvisProactive:
+        return MaterialPageRoute(builder: (_) => const JarvisProactiveScreen());
+      case jarvisProactiveCenter:
+        return MaterialPageRoute(builder: (_) => const JarvisProactiveCenterScreen());
+      case jarvisOfflineCenter:
+        return MaterialPageRoute(builder: (_) => const JarvisOfflineIntelligenceScreen());
+      case jarvisRecoveryCenter:
+        return MaterialPageRoute(builder: (_) => const JarvisRecoveryCenterScreen());
+      case jarvisSettingsCenter:
+        return MaterialPageRoute(builder: (_) => const JarvisSettingsCenter());
       case jarvisDocuments:
         return MaterialPageRoute(builder: (_) => const DocumentListScreen());
+
       case jarvisDocumentUpload:
         return MaterialPageRoute(builder: (_) => const DocumentUploadScreen());
       case jarvisDocumentCompare:
@@ -121,7 +146,10 @@ class AppRoutes {
         final item = settings.arguments as ScheduleItem;
         return MaterialPageRoute(builder: (_) => EditRoutineScreen(item: item));
       case login:
-        return MaterialPageRoute(builder: (_) => const PortalScreen());
+        final isSignUp = settings.arguments == true;
+        return MaterialPageRoute(
+          builder: (_) => LoginScreen(initialIsSignUp: isSignUp),
+        );
       case screenCareSettings:
         return MaterialPageRoute(
           builder: (_) => const ScreenCareSettingsScreen(),
@@ -137,7 +165,13 @@ class AppRoutes {
       case medications:
         return MaterialPageRoute(builder: (_) => const MedicationScreen());
       case aiCoach:
-        return MaterialPageRoute(builder: (_) => const WellWisherAiScreen());
+        return MaterialPageRoute(
+          builder: (_) => JarvisScreen(
+            onStateInvalidationRequired: () {
+              AppServiceLocator().scheduleController.loadRoutines();
+            },
+          ),
+        );
       case voiceCompanion:
         return MaterialPageRoute(
           builder: (_) => const SeniorVoiceCompanionScreen(),

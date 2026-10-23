@@ -1,0 +1,426 @@
+TAP version 13
+# Subtest: PHASE 10: AUTONOMOUS WORKFLOW & VERIFIED AGENT RUNTIME SUITE
+    # Subtest: 1. Workflow model instantiates with durable state attributes
+    ok 1 - 1. Workflow model instantiates with durable state attributes
+      ---
+      duration_ms: 1.681
+      type: 'test'
+      ...
+    # Subtest: 2. Workflow step model instantiates with dependency and policy metadata
+    ok 2 - 2. Workflow step model instantiates with dependency and policy metadata
+      ---
+      duration_ms: 0.2305
+      type: 'test'
+      ...
+    # Subtest: 3. Workflow validator verifies acyclic step dependencies (Valid DAG)
+    ok 3 - 3. Workflow validator verifies acyclic step dependencies (Valid DAG)
+      ---
+      duration_ms: 0.3927
+      type: 'test'
+      ...
+    # Subtest: 4. Workflow validator rejects circular dependencies (Cycle Detection)
+    ok 4 - 4. Workflow validator rejects circular dependencies (Cycle Detection)
+      ---
+      duration_ms: 0.2329
+      type: 'test'
+      ...
+    # Subtest: 5. Workflow validator rejects missing dependency references
+    ok 5 - 5. Workflow validator rejects missing dependency references
+      ---
+      duration_ms: 0.2302
+      type: 'test'
+      ...
+    # Subtest: 6. Workflow validator rejects unregistered capabilities
+    ok 6 - 6. Workflow validator rejects unregistered capabilities
+      ---
+      duration_ms: 0.187
+      type: 'test'
+      ...
+    # Subtest: 7. Workflow persists completely into MySQL (Workflow + Steps)
+    ok 7 - 7. Workflow persists completely into MySQL (Workflow + Steps)
+      ---
+      duration_ms: 10.6629
+      type: 'test'
+      ...
+    # Subtest: 8. Workflow restores faithfully from MySQL on engine restart
+    ok 8 - 8. Workflow restores faithfully from MySQL on engine restart
+      ---
+      duration_ms: 5.9193
+      type: 'test'
+      ...
+    # Subtest: 9. Pattern A: "Open WhatsApp" decomposes into 1-step launch workflow
+    ok 9 - 9. Pattern A: "Open WhatsApp" decomposes into 1-step launch workflow
+      ---
+      duration_ms: 0.7078
+      type: 'test'
+      ...
+    # Subtest: 10. Pattern B: "Find RMK College in Maps and open directions" plans multi-step DAG
+    ok 10 - 10. Pattern B: "Find RMK College in Maps and open directions" plans multi-step DAG
+      ---
+      duration_ms: 0.369
+      type: 'test'
+      ...
+    # Subtest: 11. Pattern C: "Find the address of RMK College and prepare a message to Arun" plans multi-step DAG
+    ok 11 - 11. Pattern C: "Find the address of RMK College and prepare a message to Arun" plans multi-step DAG
+      ---
+      duration_ms: 0.3517
+      type: 'test'
+      ...
+    # Subtest: 12. Pattern D: "Find a restaurant near me, get address, and share it with Arun" plans multi-step share DAG
+    ok 12 - 12. Pattern D: "Find a restaurant near me, get address, and share it with Arun" plans multi-step share DAG
+      ---
+      duration_ms: 0.1906
+      type: 'test'
+      ...
+    # Subtest: 13. Pattern E: "Create a meeting tomorrow at 10 AM and remind me one hour before" plans calendar+reminder DAG
+    ok 13 - 13. Pattern E: "Create a meeting tomorrow at 10 AM and remind me one hour before" plans calendar+reminder DAG
+      ---
+      duration_ms: 1.6422
+      type: 'test'
+      ...
+    # Subtest: 14. Pattern F: "Move my second meeting to 4 PM and remind me 30 minutes before" binds activeEntity
+    ok 14 - 14. Pattern F: "Move my second meeting to 4 PM and remind me 30 minutes before" binds activeEntity
+      ---
+      duration_ms: 0.17
+      type: 'test'
+      ...
+    # Subtest: 15. Pattern G: "Open WhatsApp and message Arun that I will be late" includes confirmation requirement
+    ok 15 - 15. Pattern G: "Open WhatsApp and message Arun that I will be late" includes confirmation requirement
+      ---
+      duration_ms: 0.1709
+      type: 'test'
+      ...
+    # Subtest: 16. Planner rejects arbitrary/unsupported commands and does not hallucinate capabilities
+    ok 16 - 16. Planner rejects arbitrary/unsupported commands and does not hallucinate capabilities
+      ---
+      duration_ms: 0.1083
+      type: 'test'
+      ...
+# args: [-p, com.google.android.calendar, -c, android.intent.category.LAUNCHER, 1]
+#  arg: "-p"
+#  arg: "com.google.android.calendar"
+#  arg: "-c"
+#  arg: "android.intent.category.LAUNCHER"
+#  arg: "1"
+# data="com.google.android.calendar"
+# data="android.intent.category.LAUNCHER"
+    # Subtest: 17. Workflow engine executes single-step capability with observation and verification
+    ok 17 - 17. Workflow engine executes single-step capability with observation and verification
+      ---
+      duration_ms: 1937.1757
+      type: 'test'
+      ...
+    # Subtest: 18. Step execution waits for prerequisite dependencies before executing
+    ok 18 - 18. Step execution waits for prerequisite dependencies before executing
+      ---
+      duration_ms: 32.3052
+      type: 'test'
+      ...
+    # Subtest: 19. State transfer between steps pipes output of Step 1 into inputs of Step 2
+    ok 19 - 19. State transfer between steps pipes output of Step 1 into inputs of Step 2
+      ---
+      duration_ms: 28.8666
+      type: 'test'
+      ...
+# [CALENDAR_CREATE] userId=9580 eventId=ev_1791269249382_ul5a title="Executive Sync Phase 10" time=17:00 date=Tue Oct 06 2026 00:00:00 GMT+0530 (India Standard Time) result=SUCCESS
+    # Subtest: 20. World Model updates after step completion with newly acquired entity data
+    ok 20 - 20. World Model updates after step completion with newly acquired entity data
+      ---
+      duration_ms: 58.3393
+      type: 'test'
+      ...
+# args: [-p, com.nonexistent.fake.app.neverinstalled, -c, android.intent.category.LAUNCHER, 1]
+#  arg: "-p"
+#  arg: "com.nonexistent.fake.app.neverinstalled"
+#  arg: "-c"
+#  arg: "android.intent.category.LAUNCHER"
+#  arg: "1"
+# data="com.nonexistent.fake.app.neverinstalled"
+# data="android.intent.category.LAUNCHER"
+    # Subtest: 21. Verification failure prevents assumed success and marks step as FAILED
+    ok 21 - 21. Verification failure prevents assumed success and marks step as FAILED
+      ---
+      duration_ms: 1640.0772
+      type: 'test'
+      ...
+# args: [-p, com.google.android.calendar, -c, android.intent.category.LAUNCHER, 1]
+#  arg: "-p"
+#  arg: "com.google.android.calendar"
+#  arg: "-c"
+#  arg: "android.intent.category.LAUNCHER"
+#  arg: "1"
+# data="com.google.android.calendar"
+# data="android.intent.category.LAUNCHER"
+# args: [-p, com.nonexistent.broken.package, -c, android.intent.category.LAUNCHER, 1]
+#  arg: "-p"
+#  arg: "com.nonexistent.broken.package"
+#  arg: "-c"
+#  arg: "android.intent.category.LAUNCHER"
+#  arg: "1"
+# data="com.nonexistent.broken.package"
+# data="android.intent.category.LAUNCHER"
+    # Subtest: 22. No False Completion rule: Partially completed workflow reports PARTIALLY_COMPLETED or FAILED
+    not ok 22 - 22. No False Completion rule: Partially completed workflow reports PARTIALLY_COMPLETED or FAILED
+      ---
+      duration_ms: 3441.7075
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase10AutonomousWorkflow.test.js:348:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + 'PARTIALLY_COMPLETED'
+        - 'FAILED'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'FAILED'
+      actual: 'PARTIALLY_COMPLETED'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase10AutonomousWorkflow.test.js:366:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase10AutonomousWorkflow.test.js:348:3)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: 23. Context-aware explanation: "What are you doing?" explains current step accurately
+    ok 23 - 23. Context-aware explanation: "What are you doing?" explains current step accurately
+      ---
+      duration_ms: 0.8354
+      type: 'test'
+      ...
+    # Subtest: 24. Context-aware explanation: "What's taking so long?" reports precise wait reason
+    ok 24 - 24. Context-aware explanation: "What's taking so long?" reports precise wait reason
+      ---
+      duration_ms: 0.2108
+      type: 'test'
+      ...
+    # Subtest: 25. Controlled retry respects maxAttempts and applies exponential backoff
+    ok 25 - 25. Controlled retry respects maxAttempts and applies exponential backoff
+      ---
+      duration_ms: 56.2149
+      type: 'test'
+      ...
+    # Subtest: 26. Non-retryable errors (e.g. PERMISSION_DENIED) do NOT retry endlessly
+    ok 26 - 26. Non-retryable errors (e.g. PERMISSION_DENIED) do NOT retry endlessly
+      ---
+      duration_ms: 0.6907
+      type: 'test'
+      ...
+    # Subtest: 27. Non-retryable error: APP_NOT_INSTALLED halts without retry
+    ok 27 - 27. Non-retryable error: APP_NOT_INSTALLED halts without retry
+      ---
+      duration_ms: 0.182
+      type: 'test'
+      ...
+    # Subtest: 28. Recovery Strategy ASK_USER pauses workflow into AWAITING_USER_INPUT state
+    ok 28 - 28. Recovery Strategy ASK_USER pauses workflow into AWAITING_USER_INPUT state
+      ---
+      duration_ms: 4.5394
+      type: 'test'
+      ...
+    # Subtest: 29. Rollback executes compensation action for supported capabilities
+    ok 29 - 29. Rollback executes compensation action for supported capabilities
+      ---
+      duration_ms: 0.4186
+      type: 'test'
+      ...
+    # Subtest: 30. Rollback is not assumed for capabilities that declare rollbackSupported = false
+    ok 30 - 30. Rollback is not assumed for capabilities that declare rollbackSupported = false
+      ---
+      duration_ms: 0.1074
+      type: 'test'
+      ...
+    # Subtest: 31. Recovery Strategy REPLAN recalculates alternate step graph on unresolvable failure
+    ok 31 - 31. Recovery Strategy REPLAN recalculates alternate step graph on unresolvable failure
+      ---
+      duration_ms: 0.214
+      type: 'test'
+      ...
+    # Subtest: 32. Workflow cancellation halts pending steps without executing subsequent side-effects
+    ok 32 - 32. Workflow cancellation halts pending steps without executing subsequent side-effects
+      ---
+      duration_ms: 8.053
+      type: 'test'
+      ...
+    # Subtest: 33. Safety Level 2/3 action pauses in AWAITING_CONFIRMATION before execution
+    ok 33 - 33. Safety Level 2/3 action pauses in AWAITING_CONFIRMATION before execution
+      ---
+      duration_ms: 13.2534
+      type: 'test'
+      ...
+# Error: Activity not started, unable to resolve Intent { act=android.intent.action.SEND typ=text/plain flg=0x10000000 xflg=0x4 pkg=confirmed (has extras) }
+    # Subtest: 34. Conversational continuation "Yes" resumes awaiting workflow from current step
+    ok 34 - 34. Conversational continuation "Yes" resumes awaiting workflow from current step
+      ---
+      duration_ms: 166.0332
+      type: 'test'
+      ...
+    # Subtest: 35. Conversational input "Use the second one" resolves ambiguity and resumes
+    ok 35 - 35. Conversational input "Use the second one" resolves ambiguity and resumes
+      ---
+      duration_ms: 19.8203
+      type: 'test'
+      ...
+    # Subtest: 36. Conversational continuation "Stop" / "Cancel" cancels in-flight workflow
+    not ok 36 - 36. Conversational continuation "Stop" / "Cancel" cancels in-flight workflow
+      ---
+      duration_ms: 7.3755
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase10AutonomousWorkflow.test.js:625:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        false !== true
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: true
+      actual: false
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase10AutonomousWorkflow.test.js:644:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase10AutonomousWorkflow.test.js:625:3)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: 37. Conversational "Skip that step" skips current step and proceeds to next step in DAG
+    ok 37 - 37. Conversational "Skip that step" skips current step and proceeds to next step in DAG
+      ---
+      duration_ms: 11.2383
+      type: 'test'
+      ...
+    # Subtest: 38. System Orchestrator intercepts "What's taking so long?" and queries active workflow
+    not ok 38 - 38. System Orchestrator intercepts "What's taking so long?" and queries active workflow
+      ---
+      duration_ms: 9.1188
+      type: 'test'
+      location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase10AutonomousWorkflow.test.js:666:11'
+      failureType: 'testCodeFailure'
+      error: |-
+        The expression evaluated to a falsy value:
+        
+          assert.ok(res.speech.includes('waiting for your explicit confirmation') || res.speech.includes('waiting'))
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: true
+      actual: false
+      operator: '=='
+      stack: |-
+        TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase10AutonomousWorkflow.test.js:692:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async TestContext.<anonymous> (C:\Users\yeshwanth\Downloads\wellwisher\wellwisher\backend\tests\phase10AutonomousWorkflow.test.js:666:3)
+        async Test.run (node:internal/test_runner/test:1332:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: 39. Lock Manager successfully acquires and releases mutual exclusion locks
+    ok 39 - 39. Lock Manager successfully acquires and releases mutual exclusion locks
+      ---
+      duration_ms: 3.8351
+      type: 'test'
+      ...
+    # Subtest: 40. Lock Manager rejects conflicting concurrent mutations on the same resource
+    ok 40 - 40. Lock Manager rejects conflicting concurrent mutations on the same resource
+      ---
+      duration_ms: 6.2846
+      type: 'test'
+      ...
+    # Subtest: 41. Multiple concurrent workflows maintain isolated state and independent IDs
+    ok 41 - 41. Multiple concurrent workflows maintain isolated state and independent IDs
+      ---
+      duration_ms: 0.2414
+      type: 'test'
+      ...
+    # Subtest: 42. Strict separation: activeWorkflow does NOT overwrite activeEntity or activeApplication
+    ok 42 - 42. Strict separation: activeWorkflow does NOT overwrite activeEntity or activeApplication
+      ---
+      duration_ms: 3.7279
+      type: 'test'
+      ...
+    # Subtest: 43. Idempotency key prevents duplicate side-effects on network retry
+    ok 43 - 43. Idempotency key prevents duplicate side-effects on network retry
+      ---
+      duration_ms: 0.2694
+      type: 'test'
+      ...
+    # Subtest: 44. Lock Manager auto-expires stale locks past TTL to prevent permanent deadlock
+    ok 44 - 44. Lock Manager auto-expires stale locks past TTL to prevent permanent deadlock
+      ---
+      duration_ms: 3.1725
+      type: 'test'
+      ...
+    # Subtest: 45. Forged workflowId / cross-user workflow access is strictly blocked
+    ok 45 - 45. Forged workflowId / cross-user workflow access is strictly blocked
+      ---
+      duration_ms: 2.5354
+      type: 'test'
+      ...
+    # Subtest: 46. Untrusted data containing prompt injection instructions is treated as data, NOT code
+    ok 46 - 46. Untrusted data containing prompt injection instructions is treated as data, NOT code
+      ---
+      duration_ms: 0.2413
+      type: 'test'
+      ...
+    # Subtest: 47. Safety downgrade attempt during step execution is prevented
+    ok 47 - 47. Safety downgrade attempt during step execution is prevented
+      ---
+      duration_ms: 0.2305
+      type: 'test'
+      ...
+    # Subtest: 48. Arbitrary intent injection is rejected by Capability Registry validation
+    ok 48 - 48. Arbitrary intent injection is rejected by Capability Registry validation
+      ---
+      duration_ms: 0.1033
+      type: 'test'
+      ...
+    # Subtest: 49. Phase 8 Regression: Multi-turn "second meeting -> move to 4 PM" retains activeEntity lock
+    ok 49 - 49. Phase 8 Regression: Multi-turn "second meeting -> move to 4 PM" retains activeEntity lock
+      ---
+      duration_ms: 2.9767
+      type: 'test'
+      ...
+# args: [-p, com.whatsapp, -c, android.intent.category.LAUNCHER, 1]
+#  arg: "-p"
+#  arg: "com.whatsapp"
+#  arg: "-c"
+#  arg: "android.intent.category.LAUNCHER"
+#  arg: "1"
+# data="com.whatsapp"
+# data="android.intent.category.LAUNCHER"
+    # Subtest: 50. Phase 9 Regression: "Open WhatsApp" preserves activeEntity while updating activeApplication
+    ok 50 - 50. Phase 9 Regression: "Open WhatsApp" preserves activeEntity while updating activeApplication
+      ---
+      duration_ms: 1666.8662
+      type: 'test'
+      ...
+# Warning: Activity not started, its current task has been brought to the front
+    # Subtest: 51. Full Multi-step Workflow E2E: Map Search -> Resolve -> Navigation -> Completed
+    ok 51 - 51. Full Multi-step Workflow E2E: Map Search -> Resolve -> Navigation -> Completed
+      ---
+      duration_ms: 1526.0323
+      type: 'test'
+      ...
+    # Subtest: 52. Phase 10 Diagnostic Center lists all active, completed, and pending workflows
+    ok 52 - 52. Phase 10 Diagnostic Center lists all active, completed, and pending workflows
+      ---
+      duration_ms: 2.7111
+      type: 'test'
+      ...
+    1..52
+not ok 1 - PHASE 10: AUTONOMOUS WORKFLOW & VERIFIED AGENT RUNTIME SUITE
+  ---
+  duration_ms: 10711.0758
+  type: 'test'
+  location: 'C:\\Users\\yeshwanth\\Downloads\\wellwisher\\wellwisher\\backend\\tests\\phase10AutonomousWorkflow.test.js:51:1'
+  failureType: 'subtestsFailed'
+  error: '3 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...

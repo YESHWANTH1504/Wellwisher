@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../controller/jarvis_controller.dart';
-import '../models/jarvis_models.dart';
-import '../widgets/jarvis_orb.dart';
-import '../widgets/jarvis_chat_bubble.dart';
+import '../core/jarvis_colors.dart';
+import '../widgets/jarvis_core.dart';
+import '../widgets/jarvis_calendar_sheet.dart';
+import '../services/jarvis_tts_service.dart';
+import 'jarvis_voice_settings_screen.dart';
+import 'jarvis_memories_screen.dart';
 
-import 'jarvis_settings_screen.dart';
-import 'document_list_screen.dart';
-import 'document_upload_screen.dart';
-
+/// JARVIS Dedicated Assistant Screen
+/// Voice-first dynamic interface with reactive AI core and natural assistant cards.
 class JarvisScreen extends StatefulWidget {
   final JarvisController? controller;
   final VoidCallback? onStateInvalidationRequired;
@@ -26,16 +28,8 @@ class _JarvisScreenState extends State<JarvisScreen> {
   late final JarvisController _controller;
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
-  final List<String> _quickSuggestions = [
-    'What does my blood report say?',
-    'Compare my reports',
-    'Plan my day',
-    'Give me my morning briefing',
-    'What is next on my schedule?',
-    'How did I do today?',
-    'Remember that I prefer morning meetings',
-  ];
+  bool _isDisposed = false;
+  bool _showKeyboard = false;
 
   @override
   void initState() {
@@ -48,7 +42,7 @@ class _JarvisScreenState extends State<JarvisScreen> {
   }
 
   void _onControllerUpdate() {
-    if (mounted) {
+    if (mounted && !_isDisposed) {
       setState(() {});
       _scrollToBottom();
     }
@@ -56,11 +50,11 @@ class _JarvisScreenState extends State<JarvisScreen> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (_scrollController.hasClients && mounted) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+          curve: Curves.easeOutCubic,
         );
       }
     });
@@ -68,6 +62,7 @@ class _JarvisScreenState extends State<JarvisScreen> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _controller.removeListener(_onControllerUpdate);
     if (widget.controller == null) {
       _controller.dispose();
@@ -77,81 +72,131 @@ class _JarvisScreenState extends State<JarvisScreen> {
     super.dispose();
   }
 
+  void _openCalendarSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const JarvisCalendarSheet(),
+    );
+  }
+
   void _handleSubmitted(String text) {
-    if (text.trim().isEmpty) return;
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
     _textController.clear();
-    _controller.submitMessage(text);
+    FocusScope.of(context).unfocus();
+    setState(() => _showKeyboard = false);
+    if (trimmed.toLowerCase().contains('show my calendar') ||
+        trimmed.toLowerCase().contains('open my calendar') ||
+        trimmed.toLowerCase().contains("open today's schedule") ||
+        trimmed.toLowerCase().contains('show this week')) {
+      _openCalendarSheet();
+    }
+    _controller.submitMessage(trimmed);
+  }
+
+  void _handleMicTap() {
+    HapticFeedback.mediumImpact();
+    if (_controller.isSpeaking) {
+      _controller.interruptSpeech();
+    } else if (_controller.isListening) {
+      _controller.stopListening();
+    } else {
+      _controller.startListening();
+    }
+  }
+
+  Widget _buildQuickVoiceSwitcher() {
+    final isMale = _controller.currentVoiceGender == JarvisVoiceGender.male;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _controller.switchVoice(JarvisVoiceGender.female);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: !isMale ? const Color(0xFF00D2FF).withOpacity(0.25) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                '♀ Female',
+                style: TextStyle(
+                  color: !isMale ? const Color(0xFF00D2FF) : const Color(0xFF64748B),
+                  fontWeight: !isMale ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _controller.switchVoice(JarvisVoiceGender.male);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isMale ? const Color(0xFF00D2FF).withOpacity(0.25) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                '♂ Male',
+                style: TextStyle(
+                  color: isMale ? const Color(0xFF00D2FF) : const Color(0xFF64748B),
+                  fontWeight: isMale ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final orbState = _controller.orbState;
-    final messages = _controller.messages;
-    final currentTranscript = _controller.currentTranscript;
+    final isListening = _controller.isListening;
+    final isSpeaking = _controller.isSpeaking;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0C0D14),
+      backgroundColor: const Color(0xFF070B14),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0C0D14),
+        backgroundColor: const Color(0xFF0B1120),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white70, size: 20),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: orbState == JarvisOrbState.listening
-                    ? const Color(0xFF00E5FF)
-                    : (orbState == JarvisOrbState.thinking
-                        ? const Color(0xFF7C4DFF)
-                        : const Color(0xFF00E676)),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'JARVIS AI Companion',
-              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
-            ),
-          ],
+        title: const Text(
+          'JARVIS',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2.0,
+            fontSize: 18,
+          ),
         ),
         actions: [
+          _buildQuickVoiceSwitcher(),
           IconButton(
-            icon: const Icon(Icons.document_scanner_rounded, color: Color(0xFF38BDF8)),
-            tooltip: 'Health Documents & Reports',
+            icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF94A3B8)),
+            tooltip: 'Personal Schedule',
+            onPressed: _openCalendarSheet,
+          ),
+          IconButton(
+            icon: const Icon(Icons.tune_rounded, color: Color(0xFF94A3B8)),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const DocumentListScreen()),
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              _controller.isVoiceEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-              color: _controller.isVoiceEnabled ? const Color(0xFF00E5FF) : Colors.white38,
-            ),
-            tooltip: _controller.isVoiceEnabled ? 'Voice Responses Enabled' : 'Voice Responses Muted',
-            onPressed: () => _controller.toggleVoice(!_controller.isVoiceEnabled),
-          ),
-          IconButton(
-            icon: const Icon(Icons.bolt, color: Color(0xFFFFD54F)),
-            tooltip: 'Action Center & Workflows',
-            onPressed: () => Navigator.pushNamed(context, '/jarvis/action-center'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.analytics_outlined, color: Color(0xFF00E5FF)),
-            tooltip: 'Autonomous Health Center',
-            onPressed: () => Navigator.pushNamed(context, '/jarvis/health'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white70),
-            tooltip: 'JARVIS Settings',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const JarvisSettingsScreen()),
+              MaterialPageRoute(builder: (_) => const JarvisVoiceSettingsScreen()),
             ),
           ),
         ],
@@ -159,184 +204,220 @@ class _JarvisScreenState extends State<JarvisScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top Ambient Animated Header with Orb
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                children: [
-                  JarvisOrb(
-                    state: orbState,
-                    size: 110,
-                    onTap: () {
-                      if (orbState == JarvisOrbState.listening) {
-                        _controller.stopListening();
-                      } else {
-                        _controller.startListening();
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _controller.statusMessage,
-                    style: const TextStyle(
-                      color: Color(0xFF82B1FF),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (currentTranscript != null && currentTranscript.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        '🎙 "$currentTranscript"',
-                        style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 13, fontStyle: FontStyle.italic),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            const Divider(color: Colors.white10, height: 1),
-
-            // Middle Scrollable Chat Transcript
+            // Center AI Core & Conversation
             Expanded(
-              child: ListView.builder(
+              child: SingleChildScrollView(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  final msg = messages[index];
-                  return JarvisChatBubble(
-                    message: msg,
-                    onConfirmAction: (conf) => _controller.confirmPendingAction(conf),
-                    onCancelAction: () => _controller.cancelPendingAction(),
-                  );
-                },
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    JarvisCore(
+                      state: _controller.currentState,
+                      size: 150,
+                      showLabel: false,
+                    ),
+                    const SizedBox(height: 16),
+                    if (_controller.messages.isEmpty)
+                      _buildWelcomePrompts()
+                    else
+                      _buildConversationList(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
 
-            // Quick Suggestion Chips
-            Container(
-              height: 38,
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: _quickSuggestions.length,
-                itemBuilder: (context, index) {
-                  final suggestion = _quickSuggestions[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ActionChip(
-                      backgroundColor: const Color(0xFF1E1E2C),
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                      label: Text(
-                        suggestion,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                      onPressed: () => _handleSubmitted(suggestion),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Bottom Input Dock
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: const BoxDecoration(
-                color: Color(0xFF13141F),
-                border: Border(top: BorderSide(color: Colors.white10)),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.attach_file_rounded, color: Color(0xFF38BDF8)),
-                    tooltip: 'Attach & Scan Health Document',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DocumentUploadScreen()),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E2C),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: _textController,
-                        style: const TextStyle(color: Colors.white, fontSize: 15),
-                        decoration: const InputDecoration(
-                          hintText: 'Command JARVIS or ask anything...',
-                          hintStyle: TextStyle(color: Colors.white38, fontSize: 14),
-                          border: InputBorder.none,
-                        ),
-                        onSubmitted: _handleSubmitted,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Send Text Button
-                  IconButton(
-                    icon: const Icon(Icons.send_rounded, color: Color(0xFF2979FF)),
-                    onPressed: () => _handleSubmitted(_textController.text),
-                  ),
-                  const SizedBox(width: 4),
-                  // Large Voice Microphone Button with Accessible Semantic Label
-                  Semantics(
-                    label: 'Talk to JARVIS',
-                    button: true,
-                    child: GestureDetector(
-                      onTap: () {
-                        if (orbState == JarvisOrbState.listening) {
-                          _controller.stopListening();
-                        } else {
-                          _controller.startListening();
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: orbState == JarvisOrbState.listening
-                              ? const Color(0xFF00E5FF)
-                              : const Color(0xFF2979FF),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (orbState == JarvisOrbState.listening
-                                      ? const Color(0xFF00E5FF)
-                                      : const Color(0xFF2979FF))
-                                  .withValues(alpha: 0.4),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          orbState == JarvisOrbState.listening ? Icons.mic : Icons.mic_none_rounded,
-                          color: orbState == JarvisOrbState.listening ? Colors.black87 : Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Bottom Voice Deck
+            _buildBottomDeck(isListening, isSpeaking),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomePrompts() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF1E293B)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'How can I help you today?',
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Ask questions, request jokes, manage your calendar, or set smart reminders.',
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildPromptChip('Tell me a joke'),
+              _buildPromptChip('What is on my calendar tomorrow?'),
+              _buildPromptChip('Remind me to call Mom at 6 PM'),
+              _buildPromptChip('Explain quantum computing'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromptChip(String label) {
+    return InkWell(
+      onTap: () => _handleSubmitted(label),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF334155)),
+        ),
+        child: Text(label, style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 12)),
+      ),
+    );
+  }
+
+  Widget _buildConversationList() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _controller.messages.length,
+      itemBuilder: (context, i) {
+        final m = _controller.messages[i];
+        final isUser = m.isUser;
+
+        if (isUser) {
+          return Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12, left: 60),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(m.text, style: const TextStyle(color: Colors.white, fontSize: 14)),
+            ),
+          );
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: Color(0xFF00E5FF), size: 14),
+                  SizedBox(width: 6),
+                  Text('JARVIS', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(m.text, style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.4)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomDeck(bool isListening, bool isSpeaking) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0B1120),
+        border: Border(top: BorderSide(color: Color(0xFF1E293B))),
+      ),
+      child: Column(
+        children: [
+          if (_showKeyboard)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: JarvisColors.border),
+              ),
+              child: TextField(
+                controller: _textController,
+                cursorColor: JarvisColors.neonCyan,
+                cursorWidth: 2.0,
+                cursorRadius: const Radius.circular(2),
+                minLines: 1,
+                maxLines: 4,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.send,
+                scrollPhysics: const BouncingScrollPhysics(),
+                style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.35),
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Ask JARVIS anything...',
+                  hintStyle: TextStyle(color: Color(0xFF64748B)),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 6),
+                ),
+                onSubmitted: _handleSubmitted,
+              ),
+            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                icon: Icon(_showKeyboard ? Icons.keyboard_hide : Icons.keyboard, color: const Color(0xFF94A3B8)),
+                onPressed: () => setState(() => _showKeyboard = !_showKeyboard),
+              ),
+              GestureDetector(
+                onTap: _handleMicTap,
+                child: Container(
+                  width: 68,
+                  height: 68,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: isSpeaking
+                          ? [const Color(0xFFFF5252), const Color(0xFFFF1744)]
+                          : (isListening
+                              ? [const Color(0xFF00E5FF), const Color(0xFF00B0FF)]
+                              : [const Color(0xFF00E5FF), const Color(0xFF7C4DFF)]),
+                    ),
+                  ),
+                  child: Icon(
+                    isSpeaking ? Icons.stop : (isListening ? Icons.mic : Icons.mic_none),
+                    color: Colors.black,
+                    size: 32,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.psychology_outlined, color: Color(0xFF94A3B8)),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const JarvisMemoriesScreen()),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

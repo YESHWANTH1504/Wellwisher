@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../core/jarvis_colors.dart';
+import '../core/jarvis_typography.dart';
 import '../controller/document_controller.dart';
 import 'document_detail_screen.dart';
 
+/// Futuristic "GIVE TO JARVIS" Document Intelligence Laboratory.
+/// Multi-modal report intake, OCR scan visualizer, and structured biomarker extraction.
 class DocumentUploadScreen extends StatefulWidget {
   final DocumentController? controller;
 
@@ -75,194 +79,184 @@ Oxygen Saturation    98       %
     final text = _textController.text.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select or paste document content to analyze.')),
+        const SnackBar(
+          content: Text('Please select or paste report text to give to JARVIS.'),
+          backgroundColor: JarvisColors.surfaceElevated,
+        ),
       );
       return;
     }
 
     final success = await _controller.uploadDocument(
       ocrText: text,
-      filename: '$_selectedTemplate.pdf',
-      mimeType: 'application/pdf',
+      filename: _selectedTemplate,
     );
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Document processed and verified successfully!')),
+        const SnackBar(
+          content: Text('JARVIS extracted clinical parameters with page traceability.'),
+          backgroundColor: JarvisColors.surfaceElevated,
+        ),
       );
-
-      final latestDoc = _controller.documents.isNotEmpty ? _controller.documents.first : null;
-      if (latestDoc != null) {
+      if (_controller.documents.isNotEmpty) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => DocumentDetailScreen(
-              documentId: latestDoc.id,
-              initialDocument: latestDoc,
+              documentId: _controller.documents.first.id,
+              initialDocument: _controller.documents.first,
             ),
           ),
         );
       } else {
-        Navigator.pop(context, true);
+        Navigator.pop(context);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isUploading = _controller.isUploading;
-    final uploadStatus = _controller.uploadStatus;
-
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: JarvisColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Upload & Scan Document', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: JarvisColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: JarvisColors.cyan, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('DOCUMENT INTELLIGENCE LAB', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+            Text('Give to JARVIS', style: JarvisTypography.titleMedium),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner
+            // Multimodal intake banner
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                color: JarvisColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: JarvisColors.cyan.withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.shield_outlined, color: Color(0xFF38BDF8), size: 24),
-                  SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: JarvisColors.cyan.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.document_scanner_rounded, color: JarvisColors.cyan, size: 24),
+                  ),
+                  const SizedBox(width: 14),
                   Expanded(
-                    child: Text(
-                      'All medical documents are encrypted and strictly isolated to your account. Extracted information is non-diagnostic.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12.5),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('AUTONOMOUS MULTIMODAL INTAKE', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+                        const SizedBox(height: 2),
+                        Text(
+                          'JARVIS parses OCR documents, extracts numerical biomarkers, verifies printed reference ranges, and flags deviations.',
+                          style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // Quick Samples / Format Selector
-            const Text(
-              'Select Report Sample or Source:',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-            ),
+            // Select Sample Template
+            Text('SELECT CLINICAL DOCUMENT TEMPLATE', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.indigo)),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: _templates.keys.map((title) {
-                final isSelected = _selectedTemplate == title;
-                return ChoiceChip(
-                  label: Text(title),
-                  selected: isSelected,
-                  selectedColor: const Color(0xFF38BDF8),
-                  backgroundColor: const Color(0xFF1E293B),
-                  labelStyle: TextStyle(
-                    color: isSelected ? const Color(0xFF0F172A) : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  onSelected: (selected) {
-                    if (selected) {
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: JarvisColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: JarvisColors.border),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedTemplate,
+                  isExpanded: true,
+                  dropdownColor: JarvisColors.surfaceElevated,
+                  icon: const Icon(Icons.keyboard_arrow_down, color: JarvisColors.cyan),
+                  items: _templates.keys.map((t) {
+                    return DropdownMenuItem<String>(
+                      value: t,
+                      child: Text(t, style: JarvisTypography.bodyMedium),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
                       setState(() {
-                        _selectedTemplate = title;
-                        _textController.text = _templates[title]!;
+                        _selectedTemplate = val;
+                        _textController.text = _templates[val]!;
                       });
                     }
                   },
-                );
-              }).toList(),
+                ),
+              ),
             ),
+
             const SizedBox(height: 16),
 
-            // Text Preview / Editor Box
-            const Text(
-              'Document OCR Content:',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-            ),
+            // Document Content Editor / OCR Viewer
+            Text('DOCUMENT CONTENT / OCR STREAM', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
+                color: JarvisColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: JarvisColors.border),
               ),
               child: TextField(
                 controller: _textController,
-                maxLines: 10,
-                style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 12.5),
+                maxLines: 12,
+                style: JarvisTypography.monospace.copyWith(fontSize: 12, color: JarvisColors.textPrimary),
                 decoration: const InputDecoration(
-                  contentPadding: EdgeInsets.all(14),
+                  hintText: 'Paste OCR medical report text here...',
+                  hintStyle: TextStyle(color: JarvisColors.textDisabled),
+                  contentPadding: EdgeInsets.all(16),
                   border: InputBorder.none,
-                  hintText: 'Paste OCR text or enter document test parameters...',
-                  hintStyle: TextStyle(color: Colors.white38),
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // Progress Indicator when uploading
-            if (isUploading) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF38BDF8)),
-                ),
-                child: Column(
-                  children: [
-                    const LinearProgressIndicator(
-                      backgroundColor: Colors.white12,
-                      color: Color(0xFF38BDF8),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      uploadStatus,
-                      style: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.w600, fontSize: 13),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            if (_controller.errorMessage != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFEF4444)),
-                ),
-                child: Text(
-                  _controller.errorMessage!,
-                  style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Submit Button
+            // Action Button
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 52,
               child: ElevatedButton.icon(
-                onPressed: isUploading ? null : _handleUpload,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF38BDF8),
-                  foregroundColor: const Color(0xFF0F172A),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onPressed: _controller.isLoading ? null : _handleUpload,
+                icon: _controller.isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      )
+                    : const Icon(Icons.bolt, color: Colors.black),
+                label: Text(
+                  _controller.isLoading ? 'JARVIS ANALYZING REPORT...' : 'GIVE TO JARVIS & EXTRACT',
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
                 ),
-                icon: const Icon(Icons.cloud_upload_rounded),
-                label: const Text(
-                  'Analyze & Process Document',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: JarvisColors.cyan,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),
             ),

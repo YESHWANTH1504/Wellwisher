@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import '../core/jarvis_colors.dart';
+import '../core/jarvis_typography.dart';
 import '../models/document_models.dart';
 import '../services/document_api_service.dart';
 import '../widgets/document_comparison_card.dart';
 
+/// Futuristic JARVIS Document Comparison Screen.
+/// Compares two longitudinal lab reports to compute exact numerical deltas and out-of-range shifts.
 class DocumentComparisonScreen extends StatefulWidget {
   final String? initialLatestId;
   final String? initialPreviousId;
@@ -71,9 +75,7 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
   Future<void> _executeComparison() async {
     if (_selectedLatestId == null || _selectedPreviousId == null) return;
     if (_selectedLatestId == _selectedPreviousId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select two different reports to compare.')),
-      );
+      setState(() => _comparison = null);
       return;
     }
 
@@ -83,17 +85,17 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
     });
 
     try {
-      final res = await _apiService.compareDocuments(_selectedLatestId!, _selectedPreviousId!);
+      final comp = await _apiService.compareDocuments(_selectedLatestId!, _selectedPreviousId!);
       if (mounted) {
         setState(() {
-          _comparison = res;
+          _comparison = comp;
           _isComparing = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Comparison failed: $e';
+          _errorMessage = 'Comparison computation failed: $e';
           _isComparing = false;
         });
       }
@@ -103,131 +105,171 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: JarvisColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Compare Reports', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: JarvisColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: JarvisColors.cyan, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('LONGITUDINAL DIFFERENTIAL', style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan)),
+            Text('Report Comparison Matrix', style: JarvisTypography.titleMedium),
+          ],
+        ),
       ),
       body: _isLoadingDocs
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF818CF8)))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Selectors Box
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Select Two Reports to Compare:',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Latest Report Dropdown
-                        const Text('Latest Report (Primary):', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white10),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedLatestId,
-                              isExpanded: true,
-                              dropdownColor: const Color(0xFF1E293B),
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                              items: _availableDocs.map((d) {
-                                return DropdownMenuItem(
-                                  value: d.id,
-                                  child: Text('${d.originalFilename} (${d.displayType})'),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                setState(() => _selectedLatestId = val);
-                                _executeComparison();
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Previous Report Dropdown
-                        const Text('Previous Report (Baseline):', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white10),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedPreviousId,
-                              isExpanded: true,
-                              dropdownColor: const Color(0xFF1E293B),
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                              items: _availableDocs.map((d) {
-                                return DropdownMenuItem(
-                                  value: d.id,
-                                  child: Text('${d.originalFilename} (${d.displayType})'),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                setState(() => _selectedPreviousId = val);
-                                _executeComparison();
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+          ? const Center(child: CircularProgressIndicator(color: JarvisColors.cyan))
+          : _errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(_errorMessage!, style: JarvisTypography.bodyMedium.copyWith(color: JarvisColors.rose)),
                   ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Selectors Box
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: JarvisColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: JarvisColors.border),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'SELECT TWO CLINICAL REPORTS TO COMPARE',
+                              style: JarvisTypography.labelSmall.copyWith(color: JarvisColors.cyan),
+                            ),
+                            const SizedBox(height: 12),
 
-                  const SizedBox(height: 16),
+                            // Latest Report Dropdown
+                            Text('Latest Report (Current Reference):', style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary)),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: JarvisColors.background,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: JarvisColors.border),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedLatestId,
+                                  isExpanded: true,
+                                  dropdownColor: JarvisColors.surfaceElevated,
+                                  style: JarvisTypography.bodyMedium,
+                                  items: _availableDocs.map((d) {
+                                    return DropdownMenuItem(
+                                      value: d.id,
+                                      child: Text('${d.originalFilename} (${d.displayType})'),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    setState(() => _selectedLatestId = val);
+                                    _executeComparison();
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
 
-                  if (_isComparing) ...[
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: CircularProgressIndicator(color: Color(0xFF818CF8)),
-                      ),
-                    ),
-                  ] else if (_comparison != null) ...[
-                    DocumentComparisonCard(comparison: _comparison!),
-                  ] else if (_availableDocs.length < 2) ...[
-                    Container(
-                      margin: const EdgeInsets.all(16),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'You need at least two uploaded reports to perform historical comparisons.',
-                          style: TextStyle(color: Colors.white70),
-                          textAlign: TextAlign.center,
+                            // Previous Report Dropdown
+                            Text('Previous Report (Baseline Baseline):', style: JarvisTypography.bodySmall.copyWith(color: JarvisColors.textSecondary)),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: JarvisColors.background,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: JarvisColors.border),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedPreviousId,
+                                  isExpanded: true,
+                                  dropdownColor: JarvisColors.surfaceElevated,
+                                  style: JarvisTypography.bodyMedium,
+                                  items: _availableDocs.map((d) {
+                                    return DropdownMenuItem(
+                                      value: d.id,
+                                      child: Text('${d.originalFilename} (${d.displayType})'),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    setState(() => _selectedPreviousId = val);
+                                    _executeComparison();
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+
+                      const SizedBox(height: 16),
+
+                      // Results Area
+                      if (_isComparing)
+                        const Padding(
+                          padding: EdgeInsets.all(40),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                CircularProgressIndicator(color: JarvisColors.cyan),
+                                SizedBox(height: 16),
+                                Text('Computing biomarker differentials...', style: TextStyle(color: JarvisColors.cyan)),
+                              ],
+                            ),
+                          ),
+                        )
+                      else if (_selectedLatestId == _selectedPreviousId)
+                        Container(
+                          margin: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: JarvisColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: JarvisColors.border),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Please select two distinct reports to compute differentials.',
+                              style: JarvisTypography.bodyMedium.copyWith(color: JarvisColors.textSecondary),
+                            ),
+                          ),
+                        )
+                      else if (_comparison != null)
+                        DocumentComparisonCard(comparison: _comparison!)
+                      else
+                        Container(
+                          margin: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: JarvisColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: JarvisColors.border),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'No comparison data available for the selected reports.',
+                              style: JarvisTypography.bodyMedium.copyWith(color: JarvisColors.textSecondary),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
     );
   }
 }
